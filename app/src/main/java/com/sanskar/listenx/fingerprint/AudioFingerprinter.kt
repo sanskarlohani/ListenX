@@ -1,140 +1,222 @@
 package com.sanskar.listenx.fingerprint
 
+import android.util.Log
 import kotlin.math.*
 
 /**
- * Audio fingerprinting engine using FFT and peak detection
- * Implements Shazam-like fingerprint generation
- *
- * Process:
- * 1. Downsample audio to 11025 Hz
- * 2. Apply FFT with 1024-sample window
- * 3. Generate spectrogram
- * 4. Detect peaks in frequency bands
- * 5. Generate anchor-target pairs and create hash
+ * Audio fingerprinting engine aligned with Python backend logic.
  */
 class AudioFingerprinter {
 
     companion object {
-        // Fingerprinting parameters
-        const val TARGET_SAMPLE_RATE = 11025  // Downsampled rate
-        const val FFT_WINDOW_SIZE = 1024
-        const val OVERLAP_RATIO = 0.5f  // 50% overlap
-        const val FREQUENCY_BANDS = 256
+        private const val TAG = "AudioFingerprinter"
+        // DSP Constants from Python backend
+        const val DSP_RATIO = 4
+        const val FREQ_BIN_SIZE = 1024
+        const val MAX_FREQ_CUTOFF = 5000.0
+        const val HOP_SIZE = FREQ_BIN_SIZE / 32 // 32
 
-        // Peak detection parameters
-        const val PEAK_NEIGHBORHOOD_SIZE = 10  // Frequency bins for local peak detection
-        const val MIN_PEAK_AMPLITUDE = 10f  // Minimum amplitude for a peak
+        // Fingerprint Constants
+        const val ANCHOR_FREQ_SHIFT = 23
+        const val TARGET_FREQ_SHIFT = 14
+        const val TARGET_ZONE_SIZE = 5
 
-        // Hash parameters
-        const val ANCHOR_TIME_RANGE = 70  // Time range for target pairs (in frames)
-        const val HASH_MOD = 1000000007  // Large prime for hashing
+        // Frequency bands for peak extraction
+        val BANDS = listOf(
+            0 to 10, 10 to 20, 20 to 40, 40 to 80,
+            80 to 160, 160 to 512
+        )
     }
 
+    data class Peak(val time: Double, val freqIdx: Int, val complexValue: Pair<Float, Float>)
+
     /**
-     * Generate fingerprint from raw audio samples
-     * Returns map of hash -> timestamp pairs
+     * Generate fingerprint from raw audio samples (ShortArray)
+     * Returns Map with decimal string keys (e.g., "2147483648") and timestamp values
      */
-    fun generateFingerprint(audioSamples: ShortArray, originalSampleRate: Int): Map<Int, Int> {
-        // Step 1: Downsample audio
-        val downsampledAudio = downSampleAudio(audioSamples, originalSampleRate)
+    fun generateFingerprint(audioSamples: ShortArray, originalSampleRate: Int): Map<String, Int> {
+        Log.d(TAG, "Starting fingerprinting. Input size: ${audioSamples.size} samples.")
+        // 1. Convert to float samples [-1.0, 1.0] (WavBytesToSamples equivalent)
+        val samples = FloatArray(audioSamples.size) { audioSamples[it].toFloat() / 32768.0f }
+        Log.d(TAG, "Converted to normalized float samples.")
 
-        // Step 2: Generate spectrogram using FFT
-        val spectrogram = generateSpectrogram(downsampledAudio)
+        // 2. Low Pass Filter
+        val filteredSamples = lowPassFilter(MAX_FREQ_CUTOFF, originalSampleRate.toDouble(), samples)
+        Log.d(TAG, "Low-pass filter applied.")
 
-        // Step 3: Detect peaks in spectrogram
-        val peakMap = detectPeaks(spectrogram)
+        // 3. Downsample
+        val targetSampleRate = originalSampleRate / DSP_RATIO
+        val downsampledSamples = downsample(filteredSamples, originalSampleRate, targetSampleRate)
+        Log.d(TAG, "Downsampled to $targetSampleRate Hz. Output size: ${downsampledSamples.size} samples.")
 
-        // Step 4: Generate hashes from anchor-target pairs
-        val fingerprint = generateHashesFromPeaks(peakMap)
+        // 4. Spectrogram (STFT)
+        val spectrogram = generateSpectrogram(downsampledSamples)
+        Log.d(TAG, "Spectrogram generated: ${spectrogram.size} windows.")
 
+        // 5. Extract Peaks
+        val audioDuration = audioSamples.size.toDouble() / originalSampleRate
+        val peaks = extractPeaks(spectrogram, audioDuration)
+        Log.d(TAG, "Peaks extracted: ${peaks.size} peaks found.")
+
+        // 6. Fingerprint (Hashing)
+        val fingerprint = generateHashesFromPeaks(peaks)
+        Log.d(TAG, "Fingerprint generated: ${fingerprint.size} hashes.")
+        
         return fingerprint
     }
 
-    /**
-     * Downsample audio from original sample rate to target rate
-     */
-    private fun downSampleAudio(audioSamples: ShortArray, originalSampleRate: Int): FloatArray {
-        val downSamplingFactor = originalSampleRate / TARGET_SAMPLE_RATE
-        val downsampledSize = audioSamples.size / downSamplingFactor
-        val downsampledAudio = FloatArray(downsampledSize)
+    private fun lowPassFilter(cutoff: Double, sampleRate: Double, input: FloatArray): FloatArray {
+        val rc = 1.0 / (2.0 * PI * cutoff)
+        val dt = 1.0 / sampleRate
+        val alpha = (dt / (rc + dt)).toFloat()
 
-        for (i in downsampledAudio.indices) {
-            val originalIndex = i * downSamplingFactor
-            downsampledAudio[i] = audioSamples[originalIndex].toFloat() / 32768f
+        val output = FloatArray(input.size)
+        var prevOutput = 0.0f
+        for (i in input.indices) {
+            if (i == 0) {
+                output[i] = input[i] * alpha
+            } else {
+                output[i] = alpha * input[i] + (1.0f - alpha) * prevOutput
+            }
+            prevOutput = output[i]
         }
-
-        return downsampledAudio
+        return output
     }
 
-    /**
-     * Generate spectrogram using FFT
-     * Returns 2D array: rows = time frames, columns = frequency bins
-     */
-    private fun generateSpectrogram(audioSamples: FloatArray): Array<FloatArray> {
-        val hopSize = (FFT_WINDOW_SIZE * (1 - OVERLAP_RATIO)).toInt()
-        val numFrames = (audioSamples.size - FFT_WINDOW_SIZE) / hopSize + 1
-        val spectrogram = Array(numFrames) { FloatArray(FFT_WINDOW_SIZE / 2) }
+    private fun downsample(input: FloatArray, originalRate: Int, targetRate: Int): FloatArray {
+        val ratio = originalRate / targetRate
+        val outputSize = input.size / ratio
+        val output = FloatArray(outputSize)
 
-        for (frameIdx in 0 until numFrames) {
-            val startIdx = frameIdx * hopSize
-            val endIdx = minOf(startIdx + FFT_WINDOW_SIZE, audioSamples.size)
+        for (i in 0 until outputSize) {
+            var sum = 0.0f
+            for (j in 0 until ratio) {
+                sum += input[i * ratio + j]
+            }
+            output[i] = sum / ratio
+        }
+        return output
+    }
 
-            // Extract frame
-            val frame = FloatArray(FFT_WINDOW_SIZE)
-            for (i in 0 until (endIdx - startIdx)) {
-                frame[i] = audioSamples[startIdx + i]
+    private fun generateSpectrogram(samples: FloatArray): List<Array<Pair<Float, Float>>> {
+        val numWindows = (samples.size - FREQ_BIN_SIZE) / HOP_SIZE + 1
+        if (numWindows <= 0) return emptyList()
+
+        val spectrogram = mutableListOf<Array<Pair<Float, Float>>>()
+
+        // Hamming window: 0.54 - 0.46 * cos(2 * PI * n / (N - 1))
+        val windowFunc = FloatArray(FREQ_BIN_SIZE) { i ->
+            (0.54 - 0.46 * cos(2.0 * PI * i / (FREQ_BIN_SIZE - 1))).toFloat()
+        }
+
+        for (i in 0 until numWindows) {
+            val start = i * HOP_SIZE
+            val frame = FloatArray(FREQ_BIN_SIZE) { j ->
+                samples[start + j] * windowFunc[j]
             }
 
-            // Apply Hann window
-            applyHannWindow(frame)
-
-            // Compute FFT
             val fftResult = computeFFT(frame)
-
-            // Compute magnitude spectrum
-            for (i in 0 until FFT_WINDOW_SIZE / 2) {
-                val real = fftResult[2 * i]
-                val imag = fftResult[2 * i + 1]
-                spectrogram[frameIdx][i] = sqrt(real * real + imag * imag)
+            val complexBins = Array(FREQ_BIN_SIZE) { j ->
+                fftResult[2 * j] to fftResult[2 * j + 1]
             }
+            spectrogram.add(complexBins)
         }
 
         return spectrogram
     }
 
-    /**
-     * Apply Hann window to audio frame
-     */
-    private fun applyHannWindow(frame: FloatArray) {
-        for (i in frame.indices) {
-            val hannValue = 0.5f * (1 - cos(2 * PI * i / (frame.size - 1))).toFloat()
-            frame[i] *= hannValue
+    private fun extractPeaks(spectrogram: List<Array<Pair<Float, Float>>>, audioDuration: Double): List<Peak> {
+        if (spectrogram.isEmpty()) return emptyList()
+
+        val peaks = mutableListOf<Peak>()
+        val binDuration = audioDuration / spectrogram.size
+
+        for (binIdx in spectrogram.indices) {
+            val binData = spectrogram[binIdx]
+            val binBandMaxies = mutableListOf<Triple<Float, Pair<Float, Float>, Int>>() // mag, complex, idx
+
+            for (band in BANDS) {
+                var maxMag = -1.0f
+                var maxIdx = -1
+                for (fIdx in band.first until minOf(band.second, binData.size)) {
+                    val complex = binData[fIdx]
+                    val mag = sqrt(complex.first * complex.first + complex.second * complex.second)
+                    if (mag > maxMag) {
+                        maxMag = mag
+                        maxIdx = fIdx
+                    }
+                }
+
+                if (maxIdx != -1 && maxMag > 0.0f) {
+                    binBandMaxies.add(Triple(maxMag, binData[maxIdx], maxIdx))
+                }
+            }
+
+            if (binBandMaxies.isEmpty()) continue
+
+            val avgMagnitude = binBandMaxies.map { it.first }.average().toFloat()
+
+            for (info in binBandMaxies) {
+                if (info.first > avgMagnitude) {
+                    val peakTimeInBin = info.third.toDouble() * binDuration / FREQ_BIN_SIZE
+                    val peakTime = binIdx.toDouble() * binDuration + peakTimeInBin
+                    peaks.add(Peak(peakTime, info.third, info.second))
+                }
+            }
         }
+        return peaks
+    }
+
+    private fun generateHashesFromPeaks(peaks: List<Peak>): Map<String, Int> {
+        val fingerprints = mutableMapOf<String, Int>()
+
+        for (i in peaks.indices) {
+            val anchor = peaks[i]
+            val endIndex = minOf(peaks.size, i + TARGET_ZONE_SIZE + 1)
+
+            for (j in i + 1 until endIndex) {
+                val target = peaks[j]
+                val address = createAddress(anchor, target)
+                val anchorTimeMs = (anchor.time * 1000).toInt()
+                // Convert address to decimal string
+                fingerprints[address.toString()] = anchorTimeMs
+            }
+        }
+        return fingerprints
+    }
+
+    private fun createAddress(anchor: Peak, target: Peak): Int {
+        val anchorFreq = anchor.freqIdx
+        val targetFreq = target.freqIdx
+        val deltaMs = ((target.time - anchor.time) * 1000).toInt()
+
+        // Mask deltaMs to 14 bits to be safe, although it should be small
+        val maskedDelta = deltaMs and 0x3FFF
+
+        return (anchorFreq shl ANCHOR_FREQ_SHIFT) or (targetFreq shl TARGET_FREQ_SHIFT) or maskedDelta
     }
 
     /**
      * Simple FFT implementation (Cooley-Tukey)
-     * Input: real signal alternating with zeros for imaginary
-     * Output: complex spectrum [real0, imag0, real1, imag1, ...]
      */
     private fun computeFFT(frame: FloatArray): FloatArray {
         val n = frame.size
-        val fft = FloatArray(n * 2)  // Real and imaginary parts
+        val fft = FloatArray(n * 2)
 
-        // Initialize with input (imaginary part is 0)
         for (i in 0 until n) {
             fft[2 * i] = frame[i]
             fft[2 * i + 1] = 0f
         }
 
-        // Bit reversal
         var j = 0
         for (i in 0 until n - 1) {
             if (i < j) {
-                // Swap real and imaginary parts
-                fft.swap(2 * i, 2 * j)
-                fft.swap(2 * i + 1, 2 * j + 1)
+                val tempR = fft[2 * i]
+                val tempI = fft[2 * i + 1]
+                fft[2 * i] = fft[2 * j]
+                fft[2 * i + 1] = fft[2 * j + 1]
+                fft[2 * j] = tempR
+                fft[2 * j + 1] = tempI
             }
             var k = n / 2
             while (k <= j) {
@@ -144,7 +226,6 @@ class AudioFingerprinter {
             j += k
         }
 
-        // FFT computation
         var length = 2
         while (length <= n) {
             val angle = -2 * PI / length
@@ -156,109 +237,26 @@ class AudioFingerprinter {
                 var wRe = 1f
                 var wIm = 0f
 
-                for (j in 0 until length / 2) {
-                    val tReal = wRe * fft[2 * (i + j + length / 2)] - wIm * fft[2 * (i + j + length / 2) + 1]
-                    val tImag = wRe * fft[2 * (i + j + length / 2) + 1] + wIm * fft[2 * (i + j + length / 2)]
+                for (idx in 0 until length / 2) {
+                    val evenIdx = 2 * (i + idx)
+                    val oddIdx = 2 * (i + idx + length / 2)
 
-                    fft[2 * (i + j + length / 2)] = fft[2 * (i + j)] - tReal
-                    fft[2 * (i + j + length / 2) + 1] = fft[2 * (i + j) + 1] - tImag
-                    fft[2 * (i + j)] += tReal
-                    fft[2 * (i + j) + 1] += tImag
+                    val tReal = wRe * fft[oddIdx] - wIm * fft[oddIdx + 1]
+                    val tImag = wRe * fft[oddIdx + 1] + wIm * fft[oddIdx]
+
+                    fft[oddIdx] = fft[evenIdx] - tReal
+                    fft[oddIdx + 1] = fft[evenIdx + 1] - tImag
+                    fft[evenIdx] += tReal
+                    fft[evenIdx + 1] += tImag
 
                     val wReTemp = wRe * wReal - wIm * wImag
                     wIm = wRe * wImag + wIm * wReal
                     wRe = wReTemp
                 }
-
                 i += length
             }
             length *= 2
         }
-
         return fft
     }
-
-    /**
-     * Helper function to swap array elements
-     */
-    private fun FloatArray.swap(i: Int, j: Int) {
-        val temp = this[i]
-        this[i] = this[j]
-        this[j] = temp
-    }
-
-    /**
-     * Detect peaks in spectrogram
-     * Returns map of timeFrame -> list of (frequencyBin, amplitude) pairs
-     */
-    private fun detectPeaks(spectrogram: Array<FloatArray>): Map<Int, List<Pair<Int, Float>>> {
-        val peakMap = mutableMapOf<Int, MutableList<Pair<Int, Float>>>()
-
-        for (timeFrame in spectrogram.indices) {
-            val frequencies = spectrogram[timeFrame]
-            for (freqBin in PEAK_NEIGHBORHOOD_SIZE until frequencies.size - PEAK_NEIGHBORHOOD_SIZE) {
-                val centerAmplitude = frequencies[freqBin]
-
-                // Check if local maximum
-                if (centerAmplitude > MIN_PEAK_AMPLITUDE) {
-                    var isLocalMax = true
-                    for (offset in -PEAK_NEIGHBORHOOD_SIZE..PEAK_NEIGHBORHOOD_SIZE) {
-                        if (offset != 0 && frequencies[freqBin + offset] > centerAmplitude) {
-                            isLocalMax = false
-                            break
-                        }
-                    }
-
-                    if (isLocalMax) {
-                        peakMap.getOrPut(timeFrame) { mutableListOf() }
-                            .add(Pair(freqBin, centerAmplitude))
-                    }
-                }
-            }
-        }
-
-        return peakMap
-    }
-
-    /**
-     * Generate hashes from detected peaks
-     * Uses anchor-target pair approach
-     */
-    private fun generateHashesFromPeaks(peakMap: Map<Int, List<Pair<Int, Float>>>): Map<Int, Int> {
-        val fingerprint = mutableMapOf<Int, Int>()
-
-        for ((timeFrame, peaks) in peakMap) {
-            for (anchor in peaks) {
-                // Look for target peaks within time range
-                for (targetTime in (timeFrame + 1)..minOf(timeFrame + ANCHOR_TIME_RANGE,
-                    peakMap.keys.maxOrNull() ?: timeFrame)) {
-                    peakMap[targetTime]?.forEach { target ->
-                        // Create hash from anchor-target pair
-                        val hash = createHash(
-                            anchor.first,  // anchor frequency
-                            target.first,  // target frequency
-                            targetTime - timeFrame  // time difference
-                        )
-
-                        // Store hash with timestamp
-                        fingerprint[hash] = timeFrame
-                    }
-                }
-            }
-        }
-
-        return fingerprint
-    }
-
-    /**
-     * Create hash from anchor, target, and time difference
-     */
-    private fun createHash(anchorFreq: Int, targetFreq: Int, timeDiff: Int): Int {
-        // Simple hash combining the components
-        val hash = (anchorFreq.toLong() * 1000L +
-                   targetFreq.toLong() * 10L +
-                   timeDiff.toLong()).toInt()
-        return hash.rem(HASH_MOD)
-    }
 }
-

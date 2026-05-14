@@ -26,6 +26,5 @@ data class SongRecognitionResponse(
  * Request model for song recognition
  */
 data class FingerprintRequest(
-    val fingerprint: Map<Int, Int>  // hash -> timestamp
+    val fingerprint: Map<String, Int>  // hex hash -> timestamp
 )
-

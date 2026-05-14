@@ -1,8 +1,5 @@
 package com.sanskar.listenx.ui.screen
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -31,12 +27,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -45,18 +38,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.sanskar.listenx.R
 import com.sanskar.listenx.ui.theme.GradientEnd
 import com.sanskar.listenx.ui.theme.GradientStart
+
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.sanskar.listenx.data.model.FavoriteSong
+import com.sanskar.listenx.util.MockDataProvider
 import com.sanskar.listenx.viewmodel.SongRecognitionViewModel
 
 @Composable
 fun HomeScreen(
-    viewModel: SongRecognitionViewModel,
-    onNavigateToRecognition: () -> Unit,
-    onNavigateToFavorites: () -> Unit,
-    onNavigateToProfile: () -> Unit = {}
+    viewModel: SongRecognitionViewModel
 ) {
+    val favorites by viewModel.favoritesList.collectAsState()
+    val mockSongs = MockDataProvider.getMockSongs()
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -90,7 +86,7 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // 🎨 Featured Card Section
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
@@ -146,77 +142,34 @@ fun HomeScreen(
                     .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                repeat(5) { index ->
+                mockSongs.forEach { song ->
+                    val isFav = viewModel.isFavorite(song.youtubeId)
                     SongCard(
-                        title = "Song ${index + 1}",
-                        artist = "Artist ${index + 1}",
-                        imageUrl = "https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg",
-                        isFavorite = false,
-                        onFavoriteClick = {}
+                        title = song.title,
+                        artist = song.artist,
+                        imageUrl = "https://img.youtube.com/vi/${song.youtubeId}/mqdefault.jpg",
+                        isFavorite = isFav,
+                        onFavoriteClick = {
+                            if (isFav) {
+                                viewModel.removeFromFavorites(song.youtubeId)
+                            } else {
+                                viewModel.addToFavorites(
+                                    FavoriteSong(
+                                        song.youtubeId,
+                                        song.title,
+                                        song.artist,
+                                        song.youtubeId,
+                                        song.score,
+                                        song.album
+                                    )
+                                )
+                            }
+                        }
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
-        }
-
-        // 🎤 Floating Listen Button (Centered Bottom)
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 100.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            // Animated circle background
-            val scale by animateFloatAsState(
-                targetValue = 1.1f,
-                animationSpec = tween(1500),
-                label = "FloatingButtonScale"
-            )
-
-            // Outer circle (pulsing effect)
-            Box(
-                modifier = Modifier
-                    .size(140.dp)
-                    .scale(scale)
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                GradientStart.copy(alpha = 0.3f),
-                                GradientEnd.copy(alpha = 0.1f)
-                            )
-                        ),
-                        shape = CircleShape
-                    )
-            )
-
-            // Main Button
-            Button(
-                onClick = {
-                    viewModel.resetState()
-                    onNavigateToRecognition()
-                },
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = GradientStart,
-                    contentColor = Color.White
-                ),
-                shape = CircleShape
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        Icons.Default.Mic,
-                        contentDescription = "Listen",
-                        modifier = Modifier.size(40.dp),
-                        tint = Color.White
-                    )
-                }
-            }
         }
     }
 }
@@ -399,13 +352,8 @@ fun SongCard(
 
 @Preview(showBackground = true)
 @Composable
+@Suppress("ViewModelConstructorInComposable")
 fun HomeScreenPreview() {
-    // Mock ViewModel for preview
-    HomeScreen(
-        viewModel = SongRecognitionViewModel(),
-        onNavigateToRecognition = {},
-        onNavigateToFavorites = {},
-        onNavigateToProfile = {}
-    )
+    HomeScreen(viewModel = SongRecognitionViewModel())
 }
 

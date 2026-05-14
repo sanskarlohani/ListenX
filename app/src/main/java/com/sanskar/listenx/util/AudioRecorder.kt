@@ -1,7 +1,9 @@
 package com.sanskar.listenx.util
 
+import android.Manifest
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import androidx.annotation.RequiresPermission
 import kotlin.math.min
 
 /**
@@ -20,6 +22,7 @@ class AudioRecorder {
     }
 
     private var audioRecord: AudioRecord? = null
+    @Volatile
     private var isRecording = false
     private var recordingThread: Thread? = null
     private var audioData: ShortArray? = null
@@ -28,54 +31,88 @@ class AudioRecorder {
      * Start recording audio
      * Returns immediately; recording happens in background thread
      */
+    @RequiresPermission(Manifest.permission.RECORD_AUDIO)
+    @Synchronized
     fun startRecording(): Boolean {
-        val bufferSize = AudioRecord.getMinBufferSize(
-            SAMPLE_RATE,
-            CHANNEL_CONFIG,
-            AUDIO_FORMAT
-        )
-
-        if (bufferSize == AudioRecord.ERROR || bufferSize == AudioRecord.ERROR_BAD_VALUE) {
-            return false
+        // Stop any existing recording first
+        if (isRecording) {
+            stopRecording()
         }
 
-        audioRecord = AudioRecord(
-            MediaRecorder.AudioSource.MIC,
-            SAMPLE_RATE,
-            CHANNEL_CONFIG,
-            AUDIO_FORMAT,
-            bufferSize * BUFFER_SIZE_MULTIPLIER
-        )
+        return try {
+            val minBufferSize = AudioRecord.getMinBufferSize(
+                SAMPLE_RATE,
+                CHANNEL_CONFIG,
+                AUDIO_FORMAT
+            )
 
-        if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
-            return false
+            if (minBufferSize <= 0) {
+                return false
+            }
+
+            val bufferSize = minBufferSize * BUFFER_SIZE_MULTIPLIER
+
+            audioRecord = AudioRecord(
+                MediaRecorder.AudioSource.MIC,
+                SAMPLE_RATE,
+                CHANNEL_CONFIG,
+                AUDIO_FORMAT,
+                bufferSize
+            )
+
+            if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
+                audioRecord?.release()
+                audioRecord = null
+                return false
+            }
+
+            // Initialize audio data array
+            val totalSamples = (SAMPLE_RATE.toLong() * RECORDING_DURATION_MS / 1000).toInt()
+            audioData = ShortArray(totalSamples)
+
+            isRecording = true
+            audioRecord?.startRecording()
+
+            // Start recording in background thread
+            recordingThread = Thread({
+                try {
+                    recordAudioData()
+                } catch (e: Exception) {
+                    isRecording = false
+                }
+            }, "AudioRecordingThread")
+            recordingThread?.start()
+
+            true
+        } catch (e: Exception) {
+            isRecording = false
+            audioRecord?.release()
+            audioRecord = null
+            false
         }
-
-        // Initialize audio data array
-        val totalSamples = (SAMPLE_RATE * RECORDING_DURATION_MS) / 1000
-        audioData = ShortArray(totalSamples)
-
-        isRecording = true
-        audioRecord?.startRecording()
-
-        // Start recording in background thread
-        recordingThread = Thread {
-            recordAudioData()
-        }
-        recordingThread?.start()
-
-        return true
     }
 
     /**
      * Stop recording and return audio data
      */
+    @Synchronized
     fun stopRecording(): ShortArray? {
+        if (!isRecording && audioRecord == null) return audioData
+        
         isRecording = false
-        audioRecord?.stop()
-        recordingThread?.join()
+        try {
+            audioRecord?.stop()
+        } catch (e: Exception) {
+            // Ignore stop errors
+        }
+        
+        // Don't join from the main thread if we can avoid it, 
+        // but here we need to ensure the thread is done before releasing resources
+        recordingThread?.join(500) // Timeout join to prevent UI hang
+        
         audioRecord?.release()
         audioRecord = null
+        recordingThread = null
 
         return audioData
     }
@@ -86,22 +123,30 @@ class AudioRecorder {
     private fun recordAudioData() {
         val record = audioRecord ?: return
         val data = audioData ?: return
-        val bufSize = AudioRecord.getMinBufferSize(
+        
+        val minBufSize = AudioRecord.getMinBufferSize(
             SAMPLE_RATE,
             CHANNEL_CONFIG,
             AUDIO_FORMAT
         )
-        val buffer = ShortArray(bufSize)
+        
+        if (minBufSize <= 0) return
+        
+        val buffer = ShortArray(minBufSize)
 
         var totalSamplesRead = 0
         val maxSamples = data.size
 
         while (isRecording && totalSamplesRead < maxSamples) {
-            val samplesRead = record.read(buffer, 0, min(buffer.size, maxSamples - totalSamplesRead))
+            val toRead = minOf(buffer.size, maxSamples - totalSamplesRead)
+            val samplesRead = record.read(buffer, 0, toRead)
 
             if (samplesRead > 0) {
                 buffer.copyInto(data, totalSamplesRead, 0, samplesRead)
                 totalSamplesRead += samplesRead
+            } else if (samplesRead < 0) {
+                // Error occurred while reading
+                break
             }
         }
     }

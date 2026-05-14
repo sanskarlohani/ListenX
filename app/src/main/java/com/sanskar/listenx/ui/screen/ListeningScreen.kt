@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -22,8 +24,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +37,9 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.text.style.TextAlign
+import com.sanskar.listenx.data.model.RecognitionState
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,9 +50,34 @@ import com.sanskar.listenx.viewmodel.SongRecognitionViewModel
 @Composable
 fun ListeningScreen(
     viewModel: SongRecognitionViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToResult: () -> Unit = {}
 ) {
     val recordingProgress by viewModel.recordingProgress.collectAsState()
+    val recognitionState by viewModel.recognitionState.collectAsState()
+    var hasStarted by remember { mutableStateOf(false) }
+
+    // Auto-start recording when screen loads
+    LaunchedEffect(Unit) {
+        // Clear any previous success state so re-search works.
+        viewModel.resetState()
+        hasStarted = true
+        viewModel.startRecognition()
+    }
+
+    // Cancel recognition when leaving screen
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.cancelRecognition()
+        }
+    }
+
+    // Navigate to result when recognition is complete
+    LaunchedEffect(recognitionState) {
+        if (hasStarted && recognitionState is RecognitionState.Success) {
+            onNavigateToResult()
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -75,20 +109,31 @@ fun ListeningScreen(
         }
 
         // 🎵 Center Content
+        val titleText = when (recognitionState) {
+            is RecognitionState.Processing -> "🔍 Processing..."
+            is RecognitionState.Error -> "❌ Error"
+            else -> "🎵 Listening..."
+        }
+
+        val subtitleText = when (recognitionState) {
+            is RecognitionState.Error -> (recognitionState as RecognitionState.Error).message
+            else -> "Hold your device near the sound source"
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Alignment.Center
+            verticalArrangement = Arrangement.Center
         ) {
             // 🎤 Animated Waveform Circle
-            AnimatedWaveform(progress = recordingProgress)
+            AnimatedWaveform(progress = if (recognitionState is RecognitionState.Error) 0 else recordingProgress)
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // "Listening..." Text
+            // Status Text
             Text(
-                text = "🎵 Listening...",
+                text = titleText,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -96,12 +141,14 @@ fun ListeningScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Subtitle
+            // Subtitle / Error Message
             Text(
-                text = "Hold your device near the sound source",
+                text = subtitleText,
                 fontSize = 16.sp,
                 color = Color.White.copy(alpha = 0.8f),
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(horizontal = 32.dp),
+                textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -221,11 +268,7 @@ fun AnimatedWaveform(progress: Int) {
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                painter = androidx.compose.ui.res.painterResource(
-                    id = android.os.Build.VERSION.SDK_INT.let {
-                        android.R.drawable.ic_btn_speak_now
-                    }
-                ),
+                Icons.Default.Mic,
                 contentDescription = "Microphone",
                 modifier = Modifier.size(50.dp),
                 tint = GradientStart
@@ -236,6 +279,7 @@ fun AnimatedWaveform(progress: Int) {
 
 @Preview(showBackground = true)
 @Composable
+@Suppress("ViewModelConstructorInComposable")
 fun ListeningScreenPreview() {
     // Mock ViewModel for preview
     ListeningScreen(
@@ -243,4 +287,3 @@ fun ListeningScreenPreview() {
         onNavigateBack = {}
     )
 }
-

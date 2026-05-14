@@ -1,5 +1,7 @@
 package com.sanskar.listenx.ui.screen
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -35,21 +36,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.sanskar.listenx.data.model.FavoriteSong
 import com.sanskar.listenx.data.model.RecognitionState
-import com.sanskar.listenx.ui.theme.GradientEnd
 import com.sanskar.listenx.ui.theme.GradientStart
 import com.sanskar.listenx.viewmodel.SongRecognitionViewModel
 import java.util.Locale
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun ResultScreen(
@@ -58,6 +57,22 @@ fun ResultScreen(
     onNavigateToHome: () -> Unit
 ) {
     val state by viewModel.recognitionState.collectAsState()
+    val context = LocalContext.current
+
+    fun openYouTube(videoId: String) {
+        val url = "https://www.youtube.com/watch?v=$videoId"
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        context.startActivity(intent)
+    }
+
+    fun shareSong(title: String, artist: String, videoId: String) {
+        val sendIntent: Intent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, "Check out this song: $title by $artist - https://www.youtube.com/watch?v=$videoId")
+            type = "text/plain"
+        }
+        context.startActivity(Intent.createChooser(sendIntent, null))
+    }
 
     Box(
         modifier = Modifier
@@ -122,7 +137,8 @@ fun ResultScreen(
                                         viewModel.removeFromFavorites(song.youtubeId)
                                     else
                                         viewModel.addToFavorites(fav)
-                                }
+                                },
+                                onPlayClick = { openYouTube(song.youtubeId) }
                             )
                         }
                     }
@@ -137,7 +153,10 @@ fun ResultScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Button(
-                            onClick = onNavigateToHome,
+                            onClick = {
+                                viewModel.resetState()
+                                onNavigateToHome()
+                            },
                             modifier = Modifier
                                 .weight(1f)
                                 .height(50.dp),
@@ -164,14 +183,104 @@ fun ResultScreen(
                     }
                 }
             }
-
-            else -> {
-                // Loading or Error state
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+            is RecognitionState.Error -> {
+                val message = (state as RecognitionState.Error).message
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Text("Loading results...")
+                    Text(
+                        text = "❌ Error",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Red
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = message,
+                        fontSize = 16.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Button(
+                        onClick = onNavigateToHome,
+                        colors = ButtonDefaults.buttonColors(containerColor = GradientStart)
+                    ) {
+                        Text("Try Again")
+                    }
+                }
+            }
+            is RecognitionState.Processing -> {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator(color = GradientStart)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Finalizing results...")
+                }
+            }
+            else -> {
+                // For demo purposes: If idle, load mock songs automatically
+                val mockSongs = com.sanskar.listenx.util.MockDataProvider.getMockSongs()
+                
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    // 🔹 Top Bar
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+
+                        Text(
+                            text = "📜 Recognition History",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GradientStart
+                        )
+
+                        Spacer(modifier = Modifier.size(48.dp))
+                    }
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(mockSongs) { song ->
+                            val isFav = viewModel.isFavorite(song.youtubeId)
+                            ResultSongCard(
+                                song = song,
+                                isFavorite = isFav,
+                                onFavoriteClick = {
+                                    val fav = FavoriteSong(
+                                        song.youtubeId,
+                                        song.title,
+                                        song.artist,
+                                        song.youtubeId,
+                                        song.score,
+                                        song.album
+                                    )
+                                    if (isFav)
+                                        viewModel.removeFromFavorites(song.youtubeId)
+                                    else
+                                        viewModel.addToFavorites(fav)
+                                },
+                                onPlayClick = { openYouTube(song.youtubeId) }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -182,7 +291,8 @@ fun ResultScreen(
 fun ResultSongCard(
     song: com.sanskar.listenx.data.model.SongRecognitionResponse,
     isFavorite: Boolean,
-    onFavoriteClick: () -> Unit
+    onFavoriteClick: () -> Unit,
+    onPlayClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -297,7 +407,7 @@ fun ResultSongCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(
-                    onClick = { /* Play on YouTube */ },
+                    onClick = onPlayClick,
                     modifier = Modifier
                         .weight(1f)
                         .height(40.dp),
@@ -335,6 +445,7 @@ fun ResultSongCard(
 
 @Preview(showBackground = true)
 @Composable
+@Suppress("ViewModelConstructorInComposable")
 fun ResultScreenPreview() {
     ResultScreen(
         viewModel = SongRecognitionViewModel(),
@@ -342,4 +453,3 @@ fun ResultScreenPreview() {
         onNavigateToHome = {}
     )
 }
-

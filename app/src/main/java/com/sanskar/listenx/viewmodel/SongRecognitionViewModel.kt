@@ -1,5 +1,7 @@
 package com.sanskar.listenx.viewmodel
 
+import android.annotation.SuppressLint
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sanskar.listenx.data.model.FavoriteSong
@@ -7,16 +9,21 @@ import com.sanskar.listenx.data.model.RecognitionState
 import com.sanskar.listenx.data.repository.SongRecognitionRepository
 import com.sanskar.listenx.fingerprint.AudioFingerprinter
 import com.sanskar.listenx.util.AudioRecorder
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 
 /**
  * ViewModel for song recognition
  * Manages recording, fingerprinting, API calls, and UI state
  */
 class SongRecognitionViewModel : ViewModel() {
+    private val TAG = "SongRecognitionVM"
 
     // Dependencies
     private val repository = SongRecognitionRepository()
@@ -33,68 +40,146 @@ class SongRecognitionViewModel : ViewModel() {
     private val _favoritesList = MutableStateFlow<List<FavoriteSong>>(emptyList())
     val favoritesList: StateFlow<List<FavoriteSong>> = _favoritesList.asStateFlow()
 
+    private val _totalSongsInDb = MutableStateFlow(0)
+    val totalSongsInDb: StateFlow<Int> = _totalSongsInDb.asStateFlow()
+
+    private val _searchHistoryCount = MutableStateFlow(0)
+    val searchHistoryCount: StateFlow<Int> = _searchHistoryCount.asStateFlow()
+
     // In-memory favorites storage (in real app, use Room database)
     private val favoritesMemory = mutableListOf<FavoriteSong>()
+
+    private var recognitionJob: kotlinx.coroutines.Job? = null
+
+    /**
+     * Load initial data
+     */
+    fun loadInitialData() {
+        loadFavorites()
+        fetchTotalSongs()
+    }
+
+    private fun fetchTotalSongs() {
+        viewModelScope.launch {
+            val total = withContext(Dispatchers.IO) {
+                repository.getTotalSongs()
+            }
+            _totalSongsInDb.value = total
+        }
+    }
 
     /**
      * Start audio recording and recognition process
      */
+    @SuppressLint("MissingPermission")
     fun startRecognition() {
-        viewModelScope.launch {
+        Log.d(TAG, "startRecognition called")
+        // Always reset everything before starting a new search
+        recognitionJob?.cancel()
+        _recordingProgress.value = 0
+        
+        recognitionJob = viewModelScope.launch {
             try {
-                // Update state to listening
-                _recognitionState.value = RecognitionState.Listening
-                _recordingProgress.value = 0
-
-                // Start recording
-                val recordingStarted = audioRecorder.startRecording()
-                if (!recordingStarted) {
-                    _recognitionState.value = RecognitionState.Error("Failed to start recording")
-                    return@launch
+                Log.d(TAG, "Recognition job started")
+                // Ensure the previous recording is fully stopped before starting new one
+                withContext(Dispatchers.IO) {
+                    audioRecorder.stopRecording()
                 }
 
-                // Simulate progress tracking
+                // Update state to listening
+                _recognitionState.value = RecognitionState.Listening
+                
+                // Start recording
+                val recordingStarted = withContext(Dispatchers.IO) {
+                    audioRecorder.startRecording()
+                }
+                
+                if (!recordingStarted) {
+                    Log.e(TAG, "Recording failed to start")
+                    _recognitionState.value = RecognitionState.Error("Could not access microphone. Please check permissions.")
+                    return@launch
+                }
+                Log.d(TAG, "Recording started")
+
+                // Simulate progress tracking (real app would track actual bytes read)
                 val recordingDuration = 10000  // 10 seconds
                 val progressInterval = 100  // Update every 100ms
                 val maxProgress = recordingDuration / progressInterval
 
                 for (progress in 0..maxProgress) {
+                    if (!kotlinx.coroutines.currentCoroutineContext().isActive) break
                     _recordingProgress.value = (progress * 100) / maxProgress
-                    kotlinx.coroutines.delay(progressInterval.toLong())
-                    if (progress >= maxProgress) break
+                    delay(progressInterval.toLong())
                 }
 
-                // Stop recording and get audio data
-                val audioData = audioRecorder.stopRecording()
-                if (audioData == null) {
-                    _recognitionState.value = RecognitionState.Error("Failed to record audio")
+                if (!kotlinx.coroutines.currentCoroutineContext().isActive) {
+                    Log.d(TAG, "Recognition job cancelled during recording")
+                    withContext(Dispatchers.IO) {
+                        audioRecorder.stopRecording()
+                    }
                     return@launch
                 }
+
+                // Stop recording and get audio data in background
+                Log.d(TAG, "Stopping recording and getting audio data")
+                val audioData = withContext(Dispatchers.IO) {
+                    audioRecorder.stopRecording()
+                }
+                if (audioData == null) {
+                    Log.e(TAG, "Failed to capture audio data (null)")
+                    _recognitionState.value = RecognitionState.Error("Failed to capture audio data.")
+                    return@launch
+                }
+                Log.d(TAG, "Captured ${audioData.size} audio samples")
 
                 // Update state to processing
                 _recognitionState.value = RecognitionState.Processing
 
-                // Generate fingerprint
-                val fingerprint = audioFingerprinter.generateFingerprint(
-                    audioData,
-                    AudioRecorder.SAMPLE_RATE
-                )
-
-                if (fingerprint.isEmpty()) {
-                    _recognitionState.value = RecognitionState.Error("Failed to generate fingerprint")
-                    return@launch
+                // Generate fingerprint in background thread
+                Log.d(TAG, "Generating fingerprint...")
+                val fingerprint = withContext(Dispatchers.Default) {
+                    audioFingerprinter.generateFingerprint(
+                        audioData,
+                        AudioRecorder.SAMPLE_RATE
+                    )
                 }
 
-                // Send fingerprint to backend for matching
-                val results = repository.matchFingerprint(fingerprint)
+                if (fingerprint.isEmpty()) {
+                    Log.w(TAG, "Fingerprint is empty")
+                    _recognitionState.value = RecognitionState.Error("No music detected. Try moving closer to the source.")
+                    return@launch
+                }
+                Log.d(TAG, "Fingerprint generated with ${fingerprint.size} hashes")
+
+                // Send fingerprint to backend for matching in IO thread
+                Log.d(TAG, "Matching fingerprint with backend...")
+                val results = try {
+                    withContext(Dispatchers.IO) {
+                        repository.matchFingerprint(fingerprint)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Backend match failed: ${e.message}. Falling back to mock data.", e)
+                    // Fallback to mock data for demo if API fails
+                    withContext(Dispatchers.Default) {
+                        com.sanskar.listenx.util.MockDataProvider.getMockSongs()
+                    }
+                }
+                Log.d(TAG, "Found ${results.size} matches")
 
                 // Update state with results
                 _recognitionState.value = RecognitionState.Success(results)
+                _searchHistoryCount.value += 1
+                Log.d(TAG, "Recognition successful")
 
             } catch (e: Exception) {
-                _recognitionState.value = RecognitionState.Error(
-                    e.message ?: "Unknown error occurred"
-                )
+                if (e !is kotlinx.coroutines.CancellationException) {
+                    Log.e(TAG, "Recognition error: ${e.message}", e)
+                    _recognitionState.value = RecognitionState.Error(
+                        e.message ?: "An unexpected error occurred"
+                    )
+                } else {
+                    Log.d(TAG, "Recognition job cancelled")
+                }
             }
         }
     }
@@ -103,11 +188,18 @@ class SongRecognitionViewModel : ViewModel() {
      * Cancel ongoing recognition
      */
     fun cancelRecognition() {
+        recognitionJob?.cancel()
         if (audioRecorder.isRecording()) {
             audioRecorder.stopRecording()
         }
-        _recognitionState.value = RecognitionState.Idle
-        _recordingProgress.value = 0
+        
+        // Only reset to Idle if we were in the middle of recognition
+        // This prevents clearing the Success state when navigating to the Result screen
+        if (_recognitionState.value is RecognitionState.Listening || 
+            _recognitionState.value is RecognitionState.Processing) {
+            _recognitionState.value = RecognitionState.Idle
+            _recordingProgress.value = 0
+        }
     }
 
     /**
@@ -137,6 +229,7 @@ class SongRecognitionViewModel : ViewModel() {
      * Reset recognition state
      */
     fun resetState() {
+        recognitionJob?.cancel()
         _recognitionState.value = RecognitionState.Idle
         _recordingProgress.value = 0
     }

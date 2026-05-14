@@ -1,360 +1,334 @@
 package com.sanskar.listenx.ui.screen
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import com.sanskar.listenx.R
 import com.sanskar.listenx.ui.theme.GradientEnd
 import com.sanskar.listenx.ui.theme.GradientStart
 
+import com.sanskar.listenx.viewmodel.SongRecognitionViewModel
+
 @Composable
 fun ProfileScreen(
+    viewModel: SongRecognitionViewModel,
     onNavigateBack: () -> Unit,
-    onSettingsClick: () -> Unit = {},
-    onLogoutClick: () -> Unit = {}
+    onSettingsClick: () -> Unit,
+    onLogoutClick: () -> Unit
 ) {
-    Column(
+    var notificationsEnabled by remember { mutableStateOf(true) }
+    var darkModeEnabled by remember { mutableStateOf(false) }
+    
+    val totalSongs by viewModel.totalSongsInDb.collectAsState()
+    val favorites by viewModel.favoritesList.collectAsState()
+    val searchCount by viewModel.searchHistoryCount.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadInitialData()
+    }
+
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // 🔹 Top Bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onNavigateBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-            }
-
-            Text(
-                text = "👤 Profile",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = GradientStart
-            )
-
-            Spacer(modifier = Modifier.size(48.dp))
-        }
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .weight(1f),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            // 👤 Profile Header
-            item {
+        // 🔥 IMPROVED HEADER
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(240.dp)
+            ) {
+                // Background Gradient
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(280.dp)
-                        .padding(20.dp)
-                        .clip(RoundedCornerShape(20.dp))
+                        .fillMaxSize()
                         .background(
-                            brush = Brush.linearGradient(
+                            Brush.verticalGradient(
                                 colors = listOf(GradientStart, GradientEnd)
                             )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        // Profile Avatar
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(CircleShape)
-                                .background(color = androidx.compose.ui.graphics.Color.White),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            AsyncImage(
-                                model = "https://i.pravatar.cc/100?img=5",
-                                contentDescription = "Profile Avatar",
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Username
-                        Text(
-                            text = "John Doe",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = androidx.compose.ui.graphics.Color.White
                         )
-
-                        Text(
-                            text = "Music Lover • Spotify Premium",
-                            fontSize = 14.sp,
-                            color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f)
-                        )
-                    }
-                }
-            }
-
-            // 📊 Stats Section
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "📊 Statistics",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        StatCard(
-                            title = "Songs\nIdentified",
-                            value = "247",
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        StatCard(
-                            title = "Favorites",
-                            value = "45",
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        StatCard(
-                            title = "This Month",
-                            value = "23",
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            }
-
-            // ⚙️ Settings Section
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "⚙️ Settings & More",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-
-                    SettingsOptionCard(
-                        icon = Icons.Default.Settings,
-                        title = "Settings",
-                        description = "Manage app preferences",
-                        onClick = onSettingsClick
-                    )
-
-                    SettingsOptionCard(
-                        icon = Icons.Default.Info,
-                        title = "About ListenX",
-                        description = "Version 1.0 • Privacy & Terms",
-                        onClick = {}
-                    )
-
-                    SettingsOptionCard(
-                        icon = Icons.Default.Logout,
-                        title = "Logout",
-                        description = "Sign out from your account",
-                        onClick = onLogoutClick,
-                        isDestructive = true
-                    )
-                }
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-        }
-
-        // 📝 App Info Footer
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "ListenX © 2026 • Made with ❤️",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-            )
-        }
-    }
-}
-
-@Composable
-fun StatCard(
-    title: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = value,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = GradientStart
-            )
-
-            Text(
-                text = title,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-    }
-}
-
-@Composable
-fun SettingsOptionCard(
-    icon: androidx.compose.material.icons.materialIcon,
-    title: String,
-    description: String,
-    onClick: () -> Unit,
-    isDestructive: Boolean = false
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDestructive)
-                MaterialTheme.colorScheme.errorContainer
-            else
-                MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = if (isDestructive) MaterialTheme.colorScheme.error else GradientStart,
-                    modifier = Modifier.size(24.dp)
                 )
 
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 16.dp, start = 16.dp, end = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    // Top Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = onNavigateBack,
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White)
+                        }
+
+                        Text(
+                            "My Account",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp
+                        )
+
+                        IconButton(
+                            onClick = onSettingsClick,
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                        ) {
+                            Icon(Icons.Default.Settings, null, tint = Color.White)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Profile Image
+                    Box(
+                        modifier = Modifier
+                            .size(90.dp)
+                            .background(Color.White.copy(alpha = 0.25f), CircleShape)
+                            .padding(4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.White, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "U",
+                                fontSize = 36.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = GradientStart
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = description,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        "Hello User",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp
+                    )
+                    Text(
+                        "Music Explorer 🎵",
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
+        }
 
-            Button(
-                onClick = onClick,
-                modifier = Modifier.height(36.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isDestructive) MaterialTheme.colorScheme.error else GradientStart
-                ),
-                shape = RoundedCornerShape(8.dp)
+        // 🔥 STATS (Full Width Appearance)
+        item {
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .offset(y = (-36).dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("Go", fontSize = 12.sp)
+                StatCard(totalSongs.toString(), "Found", Icons.Default.MusicNote, Modifier.weight(1f))
+                StatCard(favorites.size.toString(), "Liked", Icons.Default.Favorite, Modifier.weight(1f))
+                StatCard(searchCount.toString(), "Searches", Icons.Default.History, Modifier.weight(1f))
             }
+        }
+
+        // 🔥 SETTINGS SECTION (Reduced Padding)
+        item {
+            SectionHeader("Preferences")
+            Card(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Column {
+                    SwitchItem(
+                        "Notifications",
+                        "App alerts & updates",
+                        Icons.Default.Notifications,
+                        notificationsEnabled
+                    ) { notificationsEnabled = it }
+                    
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.2f))
+                    
+                    SwitchItem(
+                        "Dark Mode",
+                        "Toggle dark theme",
+                        Icons.Default.DarkMode,
+                        darkModeEnabled
+                    ) { darkModeEnabled = it }
+                }
+            }
+        }
+
+        item {
+            SectionHeader("Account Settings")
+            Card(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Column {
+                    SettingItem("My History", "Manage past searches", Icons.Default.History)
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.2f))
+                    SettingItem("Privacy & Security", "Data usage & safety", Icons.Default.Security)
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.2f))
+                    SettingItem("Logout", "Sign out of your account", Icons.AutoMirrored.Filled.Logout, color = Color.Red, onClick = onLogoutClick)
+                }
+            }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                "ListenX v1.0.2",
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                color = Color.Gray.copy(alpha = 0.6f),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun ProfileScreenPreview() {
-    ProfileScreen(
-        onNavigateBack = {},
-        onSettingsClick = {},
-        onLogoutClick = {}
+fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        modifier = Modifier.padding(start = 24.dp, top = 4.dp, bottom = 6.dp),
+        fontWeight = FontWeight.Bold,
+        fontSize = 16.sp,
+        color = GradientStart
     )
 }
 
+@Composable
+fun StatCard(value: String, label: String, icon: ImageVector, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.height(110.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(10.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(icon, null, tint = GradientStart, modifier = Modifier.size(28.dp))
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(value, fontWeight = FontWeight.Bold, fontSize = 22.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text(label, fontSize = 13.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+@Composable
+fun SettingItem(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    color: Color = GradientStart,
+    onClick: () -> Unit = {}
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .background(color.copy(alpha = 0.12f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = color, modifier = Modifier.size(22.dp))
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text(subtitle, fontSize = 13.sp, color = Color.Gray)
+        }
+
+        Icon(Icons.Default.ChevronRight, null, tint = Color.LightGray.copy(alpha = 0.6f))
+    }
+}
+
+@Composable
+fun SwitchItem(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    checked: Boolean,
+    onChecked: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .background(GradientStart.copy(alpha = 0.12f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = GradientStart, modifier = Modifier.size(22.dp))
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text(subtitle, fontSize = 13.sp, color = Color.Gray)
+        }
+
+        Switch(
+            checked = checked,
+            onCheckedChange = onChecked,
+            colors = SwitchDefaults.colors(
+                checkedTrackColor = GradientStart,
+                checkedThumbColor = Color.White,
+                uncheckedTrackColor = Color.LightGray.copy(alpha = 0.3f)
+            )
+        )
+    }
+}

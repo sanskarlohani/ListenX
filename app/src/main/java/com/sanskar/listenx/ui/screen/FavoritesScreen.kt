@@ -3,6 +3,7 @@ package com.sanskar.listenx.ui.screen
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,17 +12,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -29,169 +33,223 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.sanskar.listenx.R
 import com.sanskar.listenx.data.model.FavoriteSong
+import com.sanskar.listenx.ui.theme.GradientEnd
+import com.sanskar.listenx.ui.theme.GradientStart
 import com.sanskar.listenx.viewmodel.SongRecognitionViewModel
-import java.util.Locale
 
 @Composable
-fun FavoritesScreen(viewModel: SongRecognitionViewModel, onNavigateBack: () -> Unit) {
+fun FavoritesScreen(
+    viewModel: SongRecognitionViewModel,
+    onNavigateBack: () -> Unit
+) {
     val favorites by viewModel.favoritesList.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color(0xFFF6F6F6))
     ) {
-        // 🔹 Top Bar
-        Row(
+
+        //  HEADER
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .height(180.dp)
+                .clip(RoundedCornerShape(bottomStart = 30.dp, bottomEnd = 30.dp))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(GradientStart, GradientEnd)
+                    )
+                )
+                .padding(20.dp)
         ) {
-            IconButton(onClick = onNavigateBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-            }
 
-            Text(
-                text = "❤️ My Favorites",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(modifier = Modifier.size(48.dp))
-        }
-
-        if (favorites.isEmpty()) {
-            // 📭 Empty State with Image
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Image(
-                    painter = androidx.compose.ui.res.painterResource(id = R.drawable.favourate),
-                    contentDescription = "No Favorites",
+
+                // Back Button
+                IconButton(
+                    onClick = onNavigateBack,
                     modifier = Modifier
-                        .fillMaxWidth(0.7f)
-                        .height(250.dp),
-                    contentScale = ContentScale.Fit
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "No Favorites Yet",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Add songs to your favorites to see them here",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                )
-            }
-        } else {
-            // 🎵 Favorites List
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f)
-                    .padding(horizontal = 16.dp)
-            ) {
-                Text(
-                    text = "${favorites.size} song${if (favorites.size != 1) "s" else ""} saved",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
-
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.2f))
                 ) {
-                    items(favorites) { song ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = MaterialTheme.shapes.medium,
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                AsyncImage(
-                                    model = "https://img.youtube.com/vi/${song.youtubeId}/mqdefault.jpg",
-                                    contentDescription = "Thumbnail",
-                                    modifier = Modifier
-                                        .size(80.dp)
-                                        .clip(MaterialTheme.shapes.small),
-                                    contentScale = ContentScale.Crop
-                                )
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                }
 
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(end = 8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Text(
-                                        text = song.title,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1
-                                    )
+                // Title Row
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Favorite,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(26.dp)
+                    )
 
-                                    Text(
-                                        text = song.artist,
-                                        fontSize = 14.sp,
-                                        maxLines = 1,
-                                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                                    )
+                    Spacer(modifier = Modifier.width(10.dp))
 
-                                    Text(
-                                        text = "✓ Match: ${String.format("%.0f%%", song.score)}",
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-
-                                IconButton(
-                                    onClick = { viewModel.removeFromFavorites(song.id) },
-                                    modifier = Modifier.size(40.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.DeleteOutline,
-                                        contentDescription = "Remove",
-                                        modifier = Modifier.size(20.dp),
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    Text(
+                        "My Favorites",
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        //  LIST / EMPTY STATE
+        if (favorites.isEmpty()) {
+            EmptyState()
+        } else {
+            LazyColumn(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(favorites) { song ->
+                    FavoriteCard(
+                        song = song,
+                        onRemove = { viewModel.removeFromFavorites(song.id) }
+                    )
+                }
+            }
+        }
     }
 }
+@Composable
+fun EmptyState() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            "No Favorites Yet",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            "Add songs to your favorites to see them here",
+            fontSize = 14.sp,
+            color = Color.Gray
+        )
+    }
+}
+@Composable
+fun FavoriteCard(
+    song: FavoriteSong,
+    onRemove: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(6.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            //  Thumbnail
+            AsyncImage(
+                model = "https://img.youtube.com/vi/${song.youtubeId}/mqdefault.jpg",
+                contentDescription = null,
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            //  Song Info
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    song.title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Text(
+                    song.artist,
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+
+                if (!song.album.isNullOrEmpty()) {
+                    Text(
+                        song.album ?: "",
+                        fontSize = 12.sp,
+                        color = Color.LightGray
+                    )
+                }
+            }
+
+            // ▶️ Play Button
+            IconButton(
+                onClick = { /* play */ },
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(CircleShape)
+                    .background(GradientStart)
+            ) {
+                Icon(
+                    Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    tint = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.width(6.dp))
+
+            // ❌ Delete Button
+            IconButton(
+                onClick = onRemove,
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFFFE5E5))
+            ) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = null,
+                    tint = Color.Red
+                )
+            }
+        }
+    }
+}
