@@ -4,22 +4,35 @@ import com.google.gson.annotations.SerializedName
 
 /**
  * Response model for song recognition API
+ * Maps backend JSON response to Kotlin data class
+ * Backend JSON:
+ * {
+ *   "SongID": 601126672,
+ *   "SongTitle": "The Way I Am",
+ *   "SongArtist": "Charlie Puth",
+ *   "YouTubeID": "EQnk-h-LCpQ",
+ *   "Timestamp": 45000,
+ *   "Score": 95.5
+ * }
  */
 data class SongRecognitionResponse(
-    @SerializedName("title")
+    @SerializedName("SongID")
+    val songId: Long,
+
+    @SerializedName("SongTitle")
     val title: String,
 
-    @SerializedName("artist")
+    @SerializedName("SongArtist")
     val artist: String,
 
-    @SerializedName("youtubeId")
+    @SerializedName("YouTubeID")
     val youtubeId: String,
 
-    @SerializedName("score")
-    val score: Float,
+    @SerializedName("Timestamp")
+    val timestamp: Int,
 
-    @SerializedName("album")
-    val album: String? = null
+    @SerializedName("Score")
+    val score: Float
 )
 
 /**

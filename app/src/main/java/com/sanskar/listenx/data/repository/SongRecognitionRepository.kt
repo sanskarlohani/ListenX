@@ -34,7 +34,7 @@ class SongRecognitionRepository {
 
             // Log the JSON payload for debugging
             val jsonPayload = gson.toJson(request)
-            Log.d(TAG, "📤 Sending fingerprint request to fourio/match")
+            Log.d(TAG, " Sending fingerprint request to fourio/match")
             Log.d(TAG, "   Hashes count: ${fingerprint.size}")
             Log.d(TAG, "   Sample hashes: ${fingerprint.keys.take(3)}")
             Log.d(TAG, "   Request payload size: ${jsonPayload.length} bytes")
@@ -47,6 +47,12 @@ class SongRecognitionRepository {
             // Backend returns array directly
             Log.d(TAG, "✅ Fingerprint match SUCCESS in ${elapsed}ms")
             Log.d(TAG, "   Returned ${results.size} song(s)")
+            
+            // Log raw score values from backend for debugging
+            results.forEachIndexed { index, song ->
+                Log.d(TAG, "   Song $index: ${song.title} - Raw Score: ${song.score}, Artist: ${song.artist}")
+            }
+            
             results
 
         } catch (e: SocketTimeoutException) {
@@ -58,7 +64,7 @@ class SongRecognitionRepository {
 
         } catch (e: ConnectException) {
             // CONNECTION ERROR - backend not reachable
-            val message = "🔌 ConnectException: Cannot connect to backend"
+            val message = " ConnectException: Cannot connect to backend"
             Log.e(TAG, message)
             Log.e(TAG, "   Possible causes:")
             Log.e(TAG, "   1. Backend server is not running")
@@ -70,7 +76,7 @@ class SongRecognitionRepository {
 
         } catch (e: UnknownHostException) {
             // DNS ERROR - cannot resolve hostname
-            val message = "📡 UnknownHostException: Cannot resolve backend address"
+            val message = " UnknownHostException: Cannot resolve backend address"
             Log.e(TAG, message)
             Log.e(TAG, "   Backend URL: ${RetrofitClient.getBaseUrl()}")
             Log.e(TAG, "   Check: Is DNS working? Is hostname correct?")
@@ -85,7 +91,7 @@ class SongRecognitionRepository {
                 "Could not read error body: ${ex.message}"
             }
 
-            val message = "🌐 HTTP Error ${e.code()}"
+            val message = " HTTP Error ${e.code()}"
             Log.e(TAG, message)
             Log.e(TAG, "   Message: ${e.message()}")
             Log.e(TAG, "   Error Body: $errorBody")
@@ -120,7 +126,7 @@ class SongRecognitionRepository {
      */
     suspend fun testBackendConnectivity(): Boolean {
         return try {
-            Log.d(TAG, "🔧 Testing backend connectivity...")
+            Log.d(TAG, " Testing backend connectivity...")
             val response = api.getTotalSongs()
             val isReachable = response.isNotEmpty()
             if (isReachable) {
@@ -151,11 +157,11 @@ class SongRecognitionRepository {
     /**
      * Download and index a song from Spotify/YouTube URL
      * @param url Spotify track URL or YouTube video URL
-     * @return Song metadata including title, artist, YouTube_id
+     * @return Song metadata including title, artist, youtube_id
      */
     suspend fun downloadSong(url: String): Map<String, Any> {
         return try {
-            Log.d(TAG, "📥 Downloading song from URL: $url")
+            Log.d(TAG, " Downloading song from URL: $url")
             val response = api.downloadSong(url)
             Log.d(TAG, "✅ Song downloaded successfully")
             Log.d(TAG, "   Response: $response")
@@ -194,12 +200,12 @@ class SongRecognitionRepository {
             • Backend didn't respond within timeout period
 
             Possible causes:
-            1. 🖥️ Backend not running or crashed
+            1. ️ Backend not running or crashed
             2. ⏳ Backend is too slow to process
-            3. 🔄 Network latency/congestion
-            4. 🔌 Firewall blocking connection
-            5. 📍 Wrong IP/port (connection hangs instead of refusing)
-            6. 🔗 Broken network connection
+            3.  Network latency/congestion
+            4.  Firewall blocking connection
+            5.  Wrong IP/port (connection hangs instead of refusing)
+            6.  Broken network connection
 
             How to debug:
             1. Check if backend process is alive

@@ -50,6 +50,32 @@ import com.sanskar.listenx.viewmodel.SongRecognitionViewModel
 import java.util.Locale
 import androidx.compose.ui.platform.LocalContext
 
+/**
+ * Normalize raw fingerprint match scores to 0-100 percentage scale
+ * Backend returns raw matching confidence values that can be very large (28k-43k+)
+ * We normalize to a standard 0-100 scale using a threshold approach
+ */
+fun normalizeMatchScore(rawScore: Float): Float {
+    /**
+     * Empirically determined thresholds based on real fingerprint matching:
+     * - Top match (highest score): ~43,231 → should be close to 100%
+     * - Low match (lowest useful score): ~28,484 → should be significantly lower
+     *
+     * We use 50,000 as the reference point:
+     * - Scores >= 50,000: clamped to 100%
+     * - Scores <= 0: 0%
+     * - Scores in between: (score / 50,000) * 100
+     *
+     * This gives us reasonable percentage distribution:
+     * - 43,231 → ~86.5%
+     * - 41,885 → ~83.8%
+     * - 28,484 → ~57.0%
+     */
+    val MAX_REFERENCE_SCORE = 50000f
+    val percentageScore = (rawScore / MAX_REFERENCE_SCORE) * 100f
+    return percentageScore.coerceIn(0f, 100f)
+}
+
 @Composable
 fun ResultScreen(
     viewModel: SongRecognitionViewModel,
@@ -126,12 +152,12 @@ fun ResultScreen(
                                 isFavorite = isFav,
                                 onFavoriteClick = {
                                     val fav = FavoriteSong(
-                                        song.youtubeId,
-                                        song.title,
-                                        song.artist,
-                                        song.youtubeId,
-                                        song.score,
-                                        song.album
+                                        id = song.songId.toString(),
+                                        title = song.title,
+                                        artist = song.artist,
+                                        youtubeId = song.youtubeId,
+                                        score = song.score,
+                                        album = null
                                     )
                                     if (isFav)
                                         viewModel.removeFromFavorites(song.youtubeId)
@@ -265,12 +291,12 @@ fun ResultScreen(
                                 isFavorite = isFav,
                                 onFavoriteClick = {
                                     val fav = FavoriteSong(
-                                        song.youtubeId,
-                                        song.title,
-                                        song.artist,
-                                        song.youtubeId,
-                                        song.score,
-                                        song.album
+                                        id = song.songId.toString(),
+                                        title = song.title,
+                                        artist = song.artist,
+                                        youtubeId = song.youtubeId,
+                                        score = song.score,
+                                        album = null
                                     )
                                     if (isFav)
                                         viewModel.removeFromFavorites(song.youtubeId)
@@ -362,8 +388,10 @@ fun ResultSongCard(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
 
+                            // Normalize raw fingerprint score to 0-100 percentage
+                            val percentageScore = normalizeMatchScore(song.score)
                             Text(
-                                text = String.format(Locale.US, "%.0f%%", song.score),
+                                text = String.format(Locale.US, "%.1f%%", percentageScore),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = GradientStart
@@ -371,7 +399,7 @@ fun ResultSongCard(
                         }
 
                         LinearProgressIndicator(
-                            progress = { song.score / 100f },
+                            progress = { normalizeMatchScore(song.score) / 100f },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(6.dp)

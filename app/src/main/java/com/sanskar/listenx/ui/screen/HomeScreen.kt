@@ -70,7 +70,7 @@ fun HomeScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
                 Text(
-                    text = "ListenX",
+                    text = "FOURIO",
                     fontSize = 32.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = GradientStart
@@ -155,12 +155,12 @@ fun HomeScreen(
                             } else {
                                 viewModel.addToFavorites(
                                     FavoriteSong(
-                                        song.youtubeId,
-                                        song.title,
-                                        song.artist,
-                                        song.youtubeId,
-                                        song.score,
-                                        song.album
+                                        id = song.songId.toString(),
+                                        title = song.title,
+                                        artist = song.artist,
+                                        youtubeId = song.youtubeId,
+                                        score = song.score,
+                                        album = null
                                     )
                                 )
                             }
