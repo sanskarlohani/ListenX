@@ -25,13 +25,12 @@ import kotlinx.coroutines.CancellationException
  * ViewModel for song recognition
  * Manages recording, fingerprinting, API calls, and UI state
  */
-class SongRecognitionViewModel : ViewModel() {
+class SongRecognitionViewModel(
+    private val repository: SongRecognitionRepository = SongRecognitionRepository(),
+    private val audioRecorder: AudioRecorder = AudioRecorder(),
+    private val audioFingerprinter: AudioFingerprinter = AudioFingerprinter()
+) : ViewModel() {
     private val TAG = "SongRecognitionVM"
-
-    // Dependencies
-    private val repository = SongRecognitionRepository()
-    private val audioRecorder = AudioRecorder()
-    private val audioFingerprinter = AudioFingerprinter()
 
     // State Management using StateFlow
     private val _recognitionState = MutableStateFlow<RecognitionState>(RecognitionState.Idle)

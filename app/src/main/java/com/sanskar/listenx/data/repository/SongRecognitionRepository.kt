@@ -3,6 +3,7 @@ package com.sanskar.listenx.data.repository
 import android.util.Log
 import com.google.gson.Gson
 import com.sanskar.listenx.data.api.RetrofitClient
+import com.sanskar.listenx.data.api.SongRecognitionApi
 import com.sanskar.listenx.data.model.FingerprintRequest
 import com.sanskar.listenx.data.model.SongRecognitionResponse
 import com.sanskar.listenx.util.NetworkDebugUtil
@@ -16,8 +17,7 @@ import java.net.UnknownHostException
  * Following Repository pattern from MVVM
  * Includes comprehensive error handling and logging for debugging
  */
-class SongRecognitionRepository {
-    private val api = RetrofitClient.getApi()
+class SongRecognitionRepository(private val api: SongRecognitionApi = RetrofitClient.getApi()) {
     private val gson = Gson()
     private val TAG = "SongRecognitionRepo"
 

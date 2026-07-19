@@ -1,4 +1,4 @@
-package com.project.listenx
+package com.sanskar.listenx
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
