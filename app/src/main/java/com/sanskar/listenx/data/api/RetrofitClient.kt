@@ -14,7 +14,7 @@ object RetrofitClient {
 
     // For Physical Device, use your computer's local IP address
     // Change this to your actual machine IP if needed
-    private const val BASE_URL = "http://192.168.1.6:8000/"
+    private const val BASE_URL = "http://192.168.90.112:8000/"
 
     // Alternative URLs for quick testing:
     // - Local emulator: http://10.0.2.2:8000/

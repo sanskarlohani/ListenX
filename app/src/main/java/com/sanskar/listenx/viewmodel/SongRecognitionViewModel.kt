@@ -9,6 +9,8 @@ import com.sanskar.listenx.data.model.RecognitionState
 import com.sanskar.listenx.data.repository.SongRecognitionRepository
 import com.sanskar.listenx.fingerprint.AudioFingerprinter
 import com.sanskar.listenx.util.AudioRecorder
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.isActive
@@ -17,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 
 /**
  * ViewModel for song recognition
@@ -49,7 +52,7 @@ class SongRecognitionViewModel : ViewModel() {
     // In-memory favorites storage (in real app, use Room database)
     private val favoritesMemory = mutableListOf<FavoriteSong>()
 
-    private var recognitionJob: kotlinx.coroutines.Job? = null
+    private var recognitionJob: Job? = null
 
     /**
      * Load initial data
@@ -74,14 +77,20 @@ class SongRecognitionViewModel : ViewModel() {
     @SuppressLint("MissingPermission")
     fun startRecognition() {
         Log.d(TAG, "startRecognition called")
-        // Always reset everything before starting a new search
-        recognitionJob?.cancel()
+        
+        // Ignore if already recording to prevent overlapping processes
+        if (recognitionJob?.isActive == true) {
+            Log.d(TAG, "Recognition already running, ignoring request")
+            return
+        }
+        
         _recordingProgress.value = 0
         
         recognitionJob = viewModelScope.launch {
             try {
                 Log.d(TAG, "Recognition job started")
-                // Ensure the previous recording is fully stopped before starting new one
+                
+                // Ensure any previous hardware state is cleaned up
                 withContext(Dispatchers.IO) {
                     audioRecorder.stopRecording()
                 }
@@ -102,21 +111,19 @@ class SongRecognitionViewModel : ViewModel() {
                 Log.d(TAG, "Recording started")
 
                 // Simulate progress tracking (real app would track actual bytes read)
-                val recordingDuration = 10000  // 10 seconds
+                val recordingDuration = 20000  // 20 seconds - increased for better fingerprint accuracy
                 val progressInterval = 100  // Update every 100ms
                 val maxProgress = recordingDuration / progressInterval
 
                 for (progress in 0..maxProgress) {
-                    if (!kotlinx.coroutines.currentCoroutineContext().isActive) break
+                    if (!isActive) break
                     _recordingProgress.value = (progress * 100) / maxProgress
                     delay(progressInterval.toLong())
                 }
 
-                if (!kotlinx.coroutines.currentCoroutineContext().isActive) {
+                // Verify the job is still active before moving to processing
+                if (!isActive) {
                     Log.d(TAG, "Recognition job cancelled during recording")
-                    withContext(Dispatchers.IO) {
-                        audioRecorder.stopRecording()
-                    }
                     return@launch
                 }
 
@@ -171,14 +178,20 @@ class SongRecognitionViewModel : ViewModel() {
                 _searchHistoryCount.value += 1
                 Log.d(TAG, "Recognition successful")
 
+            } catch (e: CancellationException) {
+                Log.d(TAG, "Recognition job cancelled via exception")
+                throw e // Essential to re-throw for coroutine scope
             } catch (e: Exception) {
-                if (e !is kotlinx.coroutines.CancellationException) {
-                    Log.e(TAG, "Recognition error: ${e.message}", e)
-                    _recognitionState.value = RecognitionState.Error(
-                        e.message ?: "An unexpected error occurred"
-                    )
-                } else {
-                    Log.d(TAG, "Recognition job cancelled")
+                Log.e(TAG, "Recognition error: ${e.message}", e)
+                _recognitionState.value = RecognitionState.Error(
+                    e.message ?: "An unexpected error occurred"
+                )
+            } finally {
+                // Ensure microphone is stopped in all scenarios
+                withContext(Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
+                    if (audioRecorder.isRecording()) {
+                        audioRecorder.stopRecording()
+                    }
                 }
             }
         }
@@ -188,17 +201,19 @@ class SongRecognitionViewModel : ViewModel() {
      * Cancel ongoing recognition
      */
     fun cancelRecognition() {
-        recognitionJob?.cancel()
-        if (audioRecorder.isRecording()) {
-            audioRecorder.stopRecording()
-        }
-        
-        // Only reset to Idle if we were in the middle of recognition
-        // This prevents clearing the Success state when navigating to the Result screen
-        if (_recognitionState.value is RecognitionState.Listening || 
-            _recognitionState.value is RecognitionState.Processing) {
-            _recognitionState.value = RecognitionState.Idle
-            _recordingProgress.value = 0
+        viewModelScope.launch {
+            Log.d(TAG, "cancelRecognition called")
+            
+            // Wait for the job to fully terminate and release resources
+            recognitionJob?.cancelAndJoin()
+            
+            // Only reset to Idle if we were in the middle of recognition
+            // This prevents clearing the Success state when navigating to the Result screen
+            if (_recognitionState.value is RecognitionState.Listening || 
+                _recognitionState.value is RecognitionState.Processing) {
+                _recognitionState.value = RecognitionState.Idle
+                _recordingProgress.value = 0
+            }
         }
     }
 
