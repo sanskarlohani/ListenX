@@ -27,6 +27,9 @@ import com.sanskar.listenx.data.model.FavoriteSong
 import com.sanskar.listenx.data.model.RecognitionState
 import com.sanskar.listenx.viewmodel.SongRecognitionViewModel
 import androidx.compose.foundation.Image
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.sanskar.listenx.ui.util.performSoftHaptic
 import java.util.Locale
 
 /**
@@ -63,6 +66,8 @@ fun SongRecognitionScreen(
 ) {
     val state by viewModel.recognitionState.collectAsState()
     val recordingProgress by viewModel.recordingProgress.collectAsState()
+    val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -80,7 +85,10 @@ fun SongRecognitionScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onNavigateBack) {
+            IconButton(onClick = {
+                haptic.performSoftHaptic(context)
+                onNavigateBack()
+            }) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
             }
 
@@ -134,7 +142,10 @@ fun SongRecognitionScreen(
                     Spacer(modifier = Modifier.height(32.dp))
 
                     Button(
-                        onClick = { viewModel.startRecognition() },
+                        onClick = {
+                            haptic.performSoftHaptic(context)
+                            viewModel.startRecognition()
+                        },
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
                             .height(56.dp),
@@ -355,6 +366,7 @@ fun SongRecognitionScreen(
 
                                     IconButton(
                                         onClick = {
+                                            haptic.performSoftHaptic(context)
                                             val fav = FavoriteSong(
                                                 id = song.songId.toString(),
                                                 title = song.title,
@@ -392,7 +404,10 @@ fun SongRecognitionScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Button(
-                        onClick = onNavigateToHome,
+                        onClick = {
+                            haptic.performSoftHaptic(context)
+                            onNavigateToHome()
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp)
@@ -447,14 +462,20 @@ fun SongRecognitionScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
-                        onClick = { viewModel.startRecognition() },
+                        onClick = {
+                            haptic.performSoftHaptic(context)
+                            viewModel.startRecognition()
+                        },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Try Again")
                     }
 
                     OutlinedButton(
-                        onClick = onNavigateBack,
+                        onClick = {
+                            haptic.performSoftHaptic(context)
+                            onNavigateBack()
+                        },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Cancel")

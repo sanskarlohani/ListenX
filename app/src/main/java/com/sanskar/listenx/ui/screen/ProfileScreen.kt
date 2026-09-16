@@ -22,8 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import com.sanskar.listenx.ui.theme.GradientEnd
 import com.sanskar.listenx.ui.theme.GradientStart
+import com.sanskar.listenx.ui.util.HapticPreference
+import com.sanskar.listenx.ui.util.ThemePreference
 import com.sanskar.listenx.ui.util.neumorphic
 import com.sanskar.listenx.ui.util.neumorphicStyle
 import com.sanskar.listenx.viewmodel.SongRecognitionViewModel
@@ -35,8 +38,10 @@ fun ProfileScreen(
     onSettingsClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
+    val context = LocalContext.current
     var notificationsEnabled by remember { mutableStateOf(true) }
-    var darkModeEnabled by remember { mutableStateOf(false) }
+    val isDarkMode = ThemePreference.isDarkTheme()
+    var hapticsEnabled by remember { mutableStateOf(HapticPreference.isHapticEnabled(context)) }
     
     val totalSongs by viewModel.totalSongsInDb.collectAsState()
     val favorites by viewModel.favoritesList.collectAsState()
@@ -187,8 +192,22 @@ fun ProfileScreen(
                         "Dark Mode",
                         "Toggle dark theme",
                         Icons.Default.DarkMode,
-                        darkModeEnabled
-                    ) { darkModeEnabled = it }
+                        isDarkMode
+                    ) { enabled ->
+                        ThemePreference.setDarkMode(context, enabled)
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.2f))
+
+                    SwitchItem(
+                        "Haptic Feedback",
+                        "Touch vibration on tap",
+                        Icons.Default.Vibration,
+                        hapticsEnabled
+                    ) { enabled ->
+                        hapticsEnabled = enabled
+                        HapticPreference.setHapticEnabled(context, enabled)
+                    }
                 }
             }
         }
@@ -216,7 +235,7 @@ fun ProfileScreen(
         item {
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                "ListenX v1.0.2",
+                "ListenX v1.0.0",
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),

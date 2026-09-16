@@ -10,9 +10,9 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.toArgb
+import com.sanskar.listenx.ui.theme.LocalDarkTheme
 import com.sanskar.listenx.ui.theme.NeoDarkShadow
 import com.sanskar.listenx.ui.theme.NeoDarkShadowDark
 import com.sanskar.listenx.ui.theme.NeoLightShadow
@@ -24,7 +24,7 @@ fun Modifier.neumorphicStyle(
     offset: Dp = 4.dp,
     shape: Shape
 ): Modifier {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalDarkTheme.current
     return this.neumorphic(
         lightShadowColor = if (isDark) NeoLightShadowDark else NeoLightShadow,
         darkShadowColor = if (isDark) NeoDarkShadowDark else NeoDarkShadow,

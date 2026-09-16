@@ -1,6 +1,7 @@
 package com.sanskar.listenx.viewmodel
 
 import app.cash.turbine.test
+import com.sanskar.listenx.data.model.FavoriteSong
 import com.sanskar.listenx.data.model.RecognitionState
 import com.sanskar.listenx.data.model.SongRecognitionResponse
 import com.sanskar.listenx.data.repository.SongRecognitionRepository
@@ -92,6 +93,69 @@ class SongRecognitionViewModelTest {
             
             val errorState = awaitItem()
             assertTrue(errorState is RecognitionState.Error)
+        }
+    }
+
+    @Test
+    fun `cancelRecognition resets state to Idle when listening`() = runTest {
+        every { recorder.startRecording() } returns true
+
+        viewModel.recognitionState.test {
+            assertEquals(RecognitionState.Idle, awaitItem())
+
+            viewModel.startRecognition()
+            assertEquals(RecognitionState.Listening, awaitItem())
+
+            viewModel.cancelRecognition()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(RecognitionState.Idle, awaitItem())
+        }
+    }
+
+    @Test
+    fun `favorites management works correctly`() {
+        val song = FavoriteSong("1", "Title", "Artist", "yt123", 100f, "Album")
+
+        viewModel.addToFavorites(song)
+        assertTrue(viewModel.isFavorite("1"))
+        assertTrue(viewModel.isFavorite("yt123"))
+        assertEquals(1, viewModel.favoritesList.value.size)
+
+        viewModel.removeFromFavorites("yt123")
+        assertTrue(!viewModel.isFavorite("1"))
+        assertTrue(!viewModel.isFavorite("yt123"))
+        assertEquals(0, viewModel.favoritesList.value.size)
+    }
+
+    @Test
+    fun `resetState resets state to Idle and progress to 0`() {
+        viewModel.resetState()
+
+        assertEquals(RecognitionState.Idle, viewModel.recognitionState.value)
+        assertEquals(0, viewModel.recordingProgress.value)
+    }
+
+    @Test
+    fun `startRecognition sets Error state when fingerprint is empty`() = runTest {
+        val mockAudio = ShortArray(100)
+        every { recorder.startRecording() } returns true
+        every { recorder.stopRecording() } returns mockAudio
+        every { fingerprinter.generateFingerprint(any(), any()) } returns emptyMap()
+
+        viewModel.recognitionState.test {
+            assertEquals(RecognitionState.Idle, awaitItem())
+
+            viewModel.startRecognition()
+            assertEquals(RecognitionState.Listening, awaitItem())
+
+            testDispatcher.scheduler.advanceTimeBy(21000)
+
+            assertEquals(RecognitionState.Processing, awaitItem())
+
+            val errorState = awaitItem()
+            assertTrue(errorState is RecognitionState.Error)
+            assertEquals("No music detected. Try moving closer to the source.", (errorState as RecognitionState.Error).message)
         }
     }
 }

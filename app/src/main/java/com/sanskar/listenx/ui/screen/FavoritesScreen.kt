@@ -45,7 +45,10 @@ import com.sanskar.listenx.data.model.FavoriteSong
 import com.sanskar.listenx.ui.theme.GradientEnd
 import com.sanskar.listenx.ui.theme.GradientStart
 import com.sanskar.listenx.ui.util.neumorphicStyle
+import com.sanskar.listenx.ui.util.performSoftHaptic
 import com.sanskar.listenx.viewmodel.SongRecognitionViewModel
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 
 @Composable
 fun FavoritesScreen(
@@ -53,6 +56,8 @@ fun FavoritesScreen(
     onNavigateBack: () -> Unit
 ) {
     val favorites by viewModel.favoritesList.collectAsState()
+    val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -81,7 +86,10 @@ fun FavoritesScreen(
 
                 // Back Button
                 IconButton(
-                    onClick = onNavigateBack,
+                    onClick = {
+                        haptic.performSoftHaptic(context)
+                        onNavigateBack()
+                    },
                     modifier = Modifier
                         .size(44.dp)
                         .clip(CircleShape)
@@ -167,6 +175,9 @@ fun FavoriteCard(
     song: FavoriteSong,
     onRemove: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
+
     Card(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(0.dp),
@@ -223,7 +234,7 @@ fun FavoriteCard(
 
             // ▶️ Play Button
             IconButton(
-                onClick = { /* play */ },
+                onClick = { haptic.performSoftHaptic(context) },
                 modifier = Modifier
                     .size(50.dp)
                     .clip(CircleShape)
@@ -240,7 +251,10 @@ fun FavoriteCard(
 
             // ❌ Delete Button
             IconButton(
-                onClick = onRemove,
+                onClick = {
+                    haptic.performSoftHaptic(context)
+                    onRemove()
+                },
                 modifier = Modifier
                     .size(50.dp)
                     .clip(CircleShape)

@@ -228,7 +228,7 @@ class SongRecognitionViewModel(
      * Remove a song from favorites
      */
     fun removeFromFavorites(songId: String) {
-        favoritesMemory.removeAll { it.id == songId }
+        favoritesMemory.removeAll { it.id == songId || it.youtubeId == songId }
         _favoritesList.value = favoritesMemory.toList()
     }
 
@@ -236,7 +236,7 @@ class SongRecognitionViewModel(
      * Check if a song is in favorites
      */
     fun isFavorite(songId: String): Boolean {
-        return favoritesMemory.any { it.id == songId }
+        return favoritesMemory.any { it.id == songId || it.youtubeId == songId }
     }
 
     /**

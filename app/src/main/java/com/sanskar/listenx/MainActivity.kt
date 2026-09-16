@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.navigation.compose.rememberNavController
 import com.sanskar.listenx.navigation.AppNavigation
 import com.sanskar.listenx.ui.theme.ListenXTheme
+import com.sanskar.listenx.ui.util.ThemePreference
 import com.sanskar.listenx.util.PermissionManager
 
 /**
@@ -27,6 +28,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ThemePreference.init(this)
         enableEdgeToEdge()
 
         // Request permissions

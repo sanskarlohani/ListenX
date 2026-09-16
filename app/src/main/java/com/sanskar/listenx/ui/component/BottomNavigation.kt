@@ -22,11 +22,15 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sanskar.listenx.ui.theme.GradientEnd
 import com.sanskar.listenx.ui.theme.GradientStart
 import com.sanskar.listenx.ui.util.neumorphicStyle
+import com.sanskar.listenx.ui.util.performSoftHaptic
+import com.sanskar.listenx.ui.util.softHapticClickable
+import androidx.compose.ui.platform.LocalHapticFeedback
 
 @Composable
 fun BottomNavigationBar(
@@ -100,6 +104,8 @@ fun BottomNavigationBar(
         }
 
         // 🎤 Enhanced Floating Center Button
+        val haptic = LocalHapticFeedback.current
+        val context = LocalContext.current
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -114,7 +120,10 @@ fun BottomNavigationBar(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            IconButton(onClick = { onNavigate("listening") }) {
+            IconButton(onClick = {
+                haptic.performSoftHaptic(context)
+                onNavigate("listening")
+            }) {
                 Icon(
                     Icons.Default.Mic,
                     contentDescription = "Listen",
@@ -145,7 +154,7 @@ fun NavBarItem(
     Column(
         modifier = Modifier
             .size(56.dp)
-            .clickable(
+            .softHapticClickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onClick

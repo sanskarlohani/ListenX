@@ -42,6 +42,10 @@ import coil.compose.AsyncImage
 import com.sanskar.listenx.ui.theme.GradientEnd
 import com.sanskar.listenx.ui.theme.GradientStart
 import com.sanskar.listenx.ui.util.neumorphicStyle
+import com.sanskar.listenx.ui.util.performSoftHaptic
+import com.sanskar.listenx.ui.util.softHapticClickable
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -271,12 +275,16 @@ fun FeaturedSongCard(
     gradientStart: Color,
     gradientEnd: Color
 ) {
+    val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier
             .size(width = 280.dp, height = 160.dp)
             .padding(8.dp)
             .neumorphicStyle(shape = RoundedCornerShape(20.dp))
-            .clip(RoundedCornerShape(20.dp)),
+            .clip(RoundedCornerShape(20.dp))
+            .softHapticClickable { /* Card tap */ },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -330,7 +338,7 @@ fun FeaturedSongCard(
                 }
 
                 Button(
-                    onClick = {},
+                    onClick = { haptic.performSoftHaptic(context) },
                     modifier = Modifier
                         .height(40.dp)
                         .clip(RoundedCornerShape(12.dp)),
@@ -359,6 +367,9 @@ fun SongCard(
     isFavorite: Boolean,
     onFavoriteClick: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier
             .size(width = 180.dp, height = 240.dp)
@@ -405,7 +416,10 @@ fun SongCard(
 
                 // Favorite Button with better visibility
                 IconButton(
-                    onClick = onFavoriteClick,
+                    onClick = {
+                        haptic.performSoftHaptic(context)
+                        onFavoriteClick()
+                    },
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(8.dp)
@@ -452,7 +466,7 @@ fun SongCard(
                 }
 
                 Button(
-                    onClick = {},
+                    onClick = { haptic.performSoftHaptic(context) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(36.dp),
