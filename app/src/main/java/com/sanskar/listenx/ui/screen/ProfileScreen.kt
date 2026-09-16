@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -23,7 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sanskar.listenx.ui.theme.GradientEnd
 import com.sanskar.listenx.ui.theme.GradientStart
-
+import com.sanskar.listenx.ui.util.neumorphic
+import com.sanskar.listenx.ui.util.neumorphicStyle
 import com.sanskar.listenx.viewmodel.SongRecognitionViewModel
 
 @Composable
@@ -47,19 +49,22 @@ fun ProfileScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.background),
+        contentPadding = PaddingValues(bottom = 100.dp)
     ) {
         // 🔥 IMPROVED HEADER
         item {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(240.dp)
+                    .height(300.dp) // Increased height for breathing room
             ) {
                 // Background Gradient
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
+                        .height(260.dp) // Gradient background doesn't cover full Box height
+                        .clip(RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp))
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(GradientStart, GradientEnd)
@@ -69,7 +74,8 @@ fun ProfileScreen(
 
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
+                        .height(260.dp)
                         .padding(top = 16.dp, start = 16.dp, end = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -105,41 +111,35 @@ fun ProfileScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     // Profile Image
                     Box(
                         modifier = Modifier
-                            .size(90.dp)
-                            .background(Color.White.copy(alpha = 0.25f), CircleShape)
-                            .padding(4.dp)
+                            .size(100.dp)
+                            .neumorphicStyle(shape = CircleShape)
+                            .background(Color.White, CircleShape),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.White, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "U",
-                                fontSize = 36.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = GradientStart
-                            )
-                        }
+                        Text(
+                            "U",
+                            fontSize = 42.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = GradientStart
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        "Hello User",
+                        "User Account",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 24.sp
                     )
                     Text(
-                        "Music Explorer 🎵",
-                        color = Color.White.copy(alpha = 0.85f),
+                        "Music Enthusiast 🎵",
+                        color = Color.White.copy(alpha = 0.9f),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -147,14 +147,14 @@ fun ProfileScreen(
             }
         }
 
-        // 🔥 STATS (Full Width Appearance)
+        // 🔥 STATS (Centered and Theme-Aware)
         item {
             Row(
                 modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .offset(y = (-36).dp)
+                    .padding(horizontal = 20.dp)
+                    .offset(y = (-40).dp) // Better overlap position
                     .fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp) // More spacing
             ) {
                 StatCard(totalSongs.toString(), "Found", Icons.Default.MusicNote, Modifier.weight(1f))
                 StatCard(favorites.size.toString(), "Liked", Icons.Default.Favorite, Modifier.weight(1f))
@@ -162,14 +162,16 @@ fun ProfileScreen(
             }
         }
 
-        // 🔥 SETTINGS SECTION (Reduced Padding)
+        // 🔥 SETTINGS SECTION
         item {
             SectionHeader("Preferences")
             Card(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                    .neumorphicStyle(shape = RoundedCornerShape(20.dp)),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(2.dp)
+                elevation = CardDefaults.cardElevation(0.dp)
             ) {
                 Column {
                     SwitchItem(
@@ -194,10 +196,12 @@ fun ProfileScreen(
         item {
             SectionHeader("Account Settings")
             Card(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                    .neumorphicStyle(shape = RoundedCornerShape(20.dp)),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(2.dp)
+                elevation = CardDefaults.cardElevation(0.dp)
             ) {
                 Column {
                     SettingItem("My History", "Manage past searches", Icons.Default.History)
@@ -215,11 +219,10 @@ fun ProfileScreen(
                 "ListenX v1.0.2",
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
-                color = Color.Gray.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium
             )
-            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
@@ -238,10 +241,12 @@ fun SectionHeader(title: String) {
 @Composable
 fun StatCard(value: String, label: String, icon: ImageVector, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier.height(110.dp),
+        modifier = modifier
+            .height(110.dp)
+            .neumorphicStyle(shape = RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(10.dp)
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -251,7 +256,7 @@ fun StatCard(value: String, label: String, icon: ImageVector, modifier: Modifier
             Icon(icon, null, tint = GradientStart, modifier = Modifier.size(28.dp))
             Spacer(modifier = Modifier.height(6.dp))
             Text(value, fontWeight = FontWeight.Bold, fontSize = 22.sp, color = MaterialTheme.colorScheme.onSurface)
-            Text(label, fontSize = 13.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
+            Text(label, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -284,7 +289,7 @@ fun SettingItem(
 
         Column(modifier = Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-            Text(subtitle, fontSize = 13.sp, color = Color.Gray)
+            Text(subtitle, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
         }
 
         Icon(Icons.Default.ChevronRight, null, tint = Color.LightGray.copy(alpha = 0.6f))
@@ -318,7 +323,7 @@ fun SwitchItem(
 
         Column(modifier = Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-            Text(subtitle, fontSize = 13.sp, color = Color.Gray)
+            Text(subtitle, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
         }
 
         Switch(

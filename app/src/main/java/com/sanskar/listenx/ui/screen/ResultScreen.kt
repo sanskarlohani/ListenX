@@ -46,6 +46,7 @@ import coil.compose.AsyncImage
 import com.sanskar.listenx.data.model.FavoriteSong
 import com.sanskar.listenx.data.model.RecognitionState
 import com.sanskar.listenx.ui.theme.GradientStart
+import com.sanskar.listenx.ui.util.neumorphicStyle
 import com.sanskar.listenx.viewmodel.SongRecognitionViewModel
 import java.util.Locale
 import androidx.compose.ui.platform.LocalContext
@@ -323,8 +324,10 @@ fun ResultSongCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(8.dp)
+            .neumorphicStyle(shape = RoundedCornerShape(16.dp))
             .clip(RoundedCornerShape(16.dp)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )

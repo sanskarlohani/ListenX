@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = ListenXPurple,
+    primary = ListenXOceanic,
     onPrimary = OnPrimary,
     primaryContainer = PrimaryContainer,
     onPrimaryContainer = OnPrimaryContainer,
@@ -25,10 +25,10 @@ private val DarkColorScheme = darkColorScheme(
     onTertiary = OnTertiary,
     tertiaryContainer = TertiaryContainer,
     onTertiaryContainer = OnTertiaryContainer,
-    background = Color(0xFF1C1B1F),
-    onBackground = Color(0xFFE7E0EC),
-    surface = Color(0xFF1C1B1F),
-    onSurface = Color(0xFFE7E0EC),
+    background = NeoBackgroundDark,
+    surface = NeoBackgroundDark,
+    onBackground = OnBackgroundDark,
+    onSurface = OnSurfaceDark,
     surfaceVariant = OutlineVariant,
     onSurfaceVariant = OutlineVariant,
     outline = Outline,
@@ -39,7 +39,7 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = ListenXPurple,
+    primary = ListenXOceanic,
     onPrimary = OnPrimary,
     primaryContainer = PrimaryContainer,
     onPrimaryContainer = OnPrimaryContainer,
@@ -51,9 +51,9 @@ private val LightColorScheme = lightColorScheme(
     onTertiary = OnTertiary,
     tertiaryContainer = TertiaryContainer,
     onTertiaryContainer = OnTertiaryContainer,
-    background = Background,
+    background = NeoBackground,
+    surface = NeoBackground,
     onBackground = OnBackground,
-    surface = Surface,
     onSurface = OnSurface,
     surfaceVariant = SurfaceVariant,
     onSurfaceVariant = OnSurfaceVariant,
@@ -70,7 +70,7 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun ListenXTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

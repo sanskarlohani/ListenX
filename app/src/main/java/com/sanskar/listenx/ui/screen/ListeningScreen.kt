@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sanskar.listenx.ui.theme.GradientEnd
 import com.sanskar.listenx.ui.theme.GradientStart
+import com.sanskar.listenx.ui.util.neumorphicStyle
 import com.sanskar.listenx.viewmodel.SongRecognitionViewModel
 
 @Composable
@@ -246,13 +247,9 @@ fun AnimatedWaveform(progress: Int) {
             modifier = Modifier
                 .size(160.dp)
                 .scale(scale1)
+                .neumorphicStyle(shape = CircleShape)
                 .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.6f),
-                            GradientEnd.copy(alpha = 0.3f)
-                        )
-                    ),
+                    color = MaterialTheme.colorScheme.surface,
                     shape = CircleShape
                 )
         )
@@ -261,8 +258,9 @@ fun AnimatedWaveform(progress: Int) {
         Box(
             modifier = Modifier
                 .size(100.dp)
+                .neumorphicStyle(shape = CircleShape)
                 .background(
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.surface,
                     shape = CircleShape
                 ),
             contentAlignment = Alignment.Center

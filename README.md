@@ -16,7 +16,7 @@
 - 📊 **Confidence Scores** - Shows match accuracy (0-100%)
 - ❤️ **Favorites** - Save your favorite recognized songs
 - 📱 **Modern UI** - Built with Jetpack Compose and Material 3
-- 🎨 **Purple Gradient Theme** - Beautiful modern gradient design (#6A5AE0 → #A88BFF)
+- 🎨 **Midnight Oceanic Theme** - Beautiful modern teal gradient design (#008B8B → #48D1CC)
 
 ### User Interface
 - **Splash Screen** - 3-second animated intro
@@ -177,7 +177,7 @@ ListenX/
 │       │   │   │   ├── FavoritesScreen.kt
 │       │   │   │   └── ProfileScreen.kt
 │       │   │   └── theme/
-│       │   │       ├── Color.kt       ← Purple gradient colors
+│       │   │       ├── Color.kt       ← Midnight Oceanic theme colors
 │       │   │       ├── Theme.kt       ← Material 3 theme
 │       │   │       └── Type.kt        ← Typography
 │       │   │
@@ -245,8 +245,8 @@ The app uses a backend API for song recognition. To connect your own backend:
 Edit `ui/theme/Color.kt` to customize the color scheme:
 
 ```kotlin
-val PurpleStart = Color(0xFF6A5AE0)    // Main color
-val PurpleEnd = Color(0xFFA88BFF)      // Gradient end
+val OceanicStart = Color(0xFF008B8B)    // Main color
+val OceanicEnd = Color(0xFF48D1CC)      // Gradient end
 ```
 
 ---
@@ -392,7 +392,7 @@ For more help, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 ## 🎨 UI/UX Highlights
 
 ### Design System
-- **Color Palette**: Purple gradient theme with Material 3 colors
+- **Color Palette**: Midnight Oceanic theme with Material 3 colors
 - **Typography**: Clear hierarchy with Material 3 font styles
 - **Spacing**: Consistent 8dp/16dp/24dp padding system
 - **Icons**: Material Icons Extended library

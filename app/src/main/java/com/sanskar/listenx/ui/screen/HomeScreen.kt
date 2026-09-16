@@ -2,6 +2,7 @@ package com.sanskar.listenx.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.sanskar.listenx.ui.theme.GradientEnd
 import com.sanskar.listenx.ui.theme.GradientStart
+import com.sanskar.listenx.ui.util.neumorphicStyle
 
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -72,6 +74,8 @@ fun HomeScreen(
 ) {
     val favorites by viewModel.favoritesList.collectAsState()
     val mockSongs = MockDataProvider.getMockSongs()
+    val scrollState = rememberScrollState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -80,7 +84,7 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 80.dp)
+                .verticalScroll(scrollState)
         ) {
             // 🎵 Header Section
             Column(
@@ -89,7 +93,7 @@ fun HomeScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
                 Text(
-                    text = "FOURIO",
+                    text = "ListenX",
                     fontSize = 32.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = GradientStart
@@ -270,8 +274,11 @@ fun FeaturedSongCard(
     Card(
         modifier = Modifier
             .size(width = 280.dp, height = 160.dp)
+            .padding(8.dp)
+            .neumorphicStyle(shape = RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box(
             modifier = Modifier.fillMaxSize()
@@ -355,8 +362,11 @@ fun SongCard(
     Card(
         modifier = Modifier
             .size(width = 180.dp, height = 240.dp)
+            .padding(8.dp)
+            .neumorphicStyle(shape = RoundedCornerShape(18.dp))
             .clip(RoundedCornerShape(18.dp)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxSize()

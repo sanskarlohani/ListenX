@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sanskar.listenx.ui.theme.GradientEnd
 import com.sanskar.listenx.ui.theme.GradientStart
+import com.sanskar.listenx.ui.util.neumorphicStyle
 
 @Composable
 fun BottomNavigationBar(
@@ -47,13 +48,9 @@ fun BottomNavigationBar(
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
                 .height(72.dp)
-                .shadow(
-                    elevation = 16.dp,
-                    shape = RoundedCornerShape(24.dp),
-                    ambientColor = GradientStart.copy(alpha = 0.4f)
-                )
+                .neumorphicStyle(shape = RoundedCornerShape(24.dp))
                 .background(
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+                    color = MaterialTheme.colorScheme.surface,
                     shape = RoundedCornerShape(24.dp)
                 ),
             contentAlignment = Alignment.Center
@@ -102,12 +99,13 @@ fun BottomNavigationBar(
             }
         }
 
-        // 🎤 Enhanced Floating Center Button - Placed separately to avoid clipping by the bar's shadow/background
+        // 🎤 Enhanced Floating Center Button
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 20.dp)
                 .size(70.dp)
+                .neumorphicStyle(shape = CircleShape)
                 .clip(CircleShape)
                 .background(
                     brush = androidx.compose.ui.graphics.Brush.linearGradient(
