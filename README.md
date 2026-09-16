@@ -1,7 +1,7 @@
 # ListenX
 
 <p align="center">
-  <img src="assets/banner.svg" alt="ListenX Banner" width="100%">
+  <img src="./assets/banner.svg" alt="ListenX Banner" width="100%">
 </p>
 
 ![Build Status](https://img.shields.io/badge/build-SUCCESSFUL-green) ![API Level](https://img.shields.io/badge/API-26%2B-blue) ![License](https://img.shields.io/badge/license-MIT-blue)

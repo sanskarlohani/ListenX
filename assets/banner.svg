@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" width="1200" height="360">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#071322"/>
+      <stop offset="50%" stop-color="#0A1D30"/>
+      <stop offset="100%" stop-color="#050E1A"/>
+    </linearGradient>
+
+    <!-- Teal Gradient -->
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#48D1CC"/>
+      <stop offset="50%" stop-color="#00CED1"/>
+      <stop offset="100%" stop-color="#008B8B"/>
+    </linearGradient>
+
+    <!-- Wave/Bar Gradient -->
+    <linearGradient id="waveGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#008B8B" stop-opacity="0.2"/>
+      <stop offset="50%" stop-color="#00CED1" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#48D1CC" stop-opacity="1"/>
+    </linearGradient>
+
+    <!-- Accent Gradient -->
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#20B2AA"/>
+      <stop offset="100%" stop-color="#004D40"/>
+    </linearGradient>
+
+    <!-- Center Radial Glow -->
+    <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00CED1" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#0A1D30" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Base Canvas Background -->
+  <rect width="1200" height="360" rx="16" fill="url(#bgGrad)"/>
+  <rect width="1200" height="360" rx="16" fill="url(#centerGlow)"/>
+
+  <!-- Border Accent -->
+  <rect x="1" y="1" width="1198" height="358" rx="15" fill="none" stroke="url(#tealGrad)" stroke-opacity="0.4" stroke-width="2"/>
+
+  <!-- Background Grid Pattern -->
+  <g opacity="0.06" stroke="#48D1CC" stroke-width="1">
+    <path d="M0 60 H1200 M0 120 H1200 M0 180 H1200 M0 240 H1200 M0 300 H1200"/>
+    <path d="M150 0 V360 M300 0 V360 M450 0 V360 M600 0 V360 M750 0 V360 M900 0 V360 M1050 0 V360"/>
+  </g>
+
+  <!-- Left Side Equalizer Waveform Art -->
+  <g fill="url(#waveGrad)" transform="translate(80, 180)">
+    <rect x="0" y="-30" width="6" height="60" rx="3"/>
+    <rect x="14" y="-55" width="6" height="110" rx="3"/>
+    <rect x="28" y="-20" width="6" height="40" rx="3"/>
+    <rect x="42" y="-75" width="6" height="150" rx="3"/>
+    <rect x="56" y="-40" width="6" height="80" rx="3"/>
+    <rect x="70" y="-90" width="6" height="180" rx="3"/>
+    <rect x="84" y="-60" width="6" height="120" rx="3"/>
+    <rect x="98" y="-35" width="6" height="70" rx="3"/>
+  </g>
+
+  <!-- Right Side Equalizer Waveform Art -->
+  <g fill="url(#waveGrad)" transform="translate(1010, 180)">
+    <rect x="0" y="-35" width="6" height="70" rx="3"/>
+    <rect x="14" y="-60" width="6" height="120" rx="3"/>
+    <rect x="28" y="-90" width="6" height="180" rx="3"/>
+    <rect x="42" y="-40" width="6" height="80" rx="3"/>
+    <rect x="56" y="-75" width="6" height="150" rx="3"/>
+    <rect x="70" y="-20" width="6" height="40" rx="3"/>
+    <rect x="84" y="-55" width="6" height="110" rx="3"/>
+    <rect x="98" y="-30" width="6" height="60" rx="3"/>
+  </g>
+
+  <!-- Center Icon: Pulse Circles & Music Note -->
+  <g transform="translate(600, 115)">
+    <!-- Outer Glow Emulation Circles -->
+    <circle r="75" fill="#00CED1" opacity="0.05"/>
+    <circle r="60" fill="#00CED1" opacity="0.10"/>
+    <circle r="48" fill="url(#accentGrad)"/>
+    <circle r="48" fill="url(#tealGrad)" opacity="0.75"/>
+    <circle r="48" fill="none" stroke="#48D1CC" stroke-width="2"/>
+
+    <!-- Music Note Icon -->
+    <path d="M-6 10 V-12 C-6 -14 -4 -16 -1 -16 L8 -18 V-8 L-2 -6 V6 C-2 8.2 -4 10 -6.5 10 C-9 10 -11 8.2 -11 6 C-11 3.8 -9 2 -6.5 2 C-5.5 2 -4.6 2.3 -4 2.8 V-10 L6 -12 V-3 L-4 -1 V6 C-4 6 -4 6 -4 6 Z" fill="#FFFFFF" transform="scale(1.2) translate(1,2)"/>
+  </g>
+
+  <!-- Main Title: LISTEN X -->
+  <!-- Shadow offset emulation for title -->
+  <text x="602" y="232" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="900" font-size="52" letter-spacing="6" fill="#000000" opacity="0.5">LISTEN X</text>
+  <text x="600" y="230" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="900" font-size="52" letter-spacing="6" fill="url(#tealGrad)">LISTEN X</text>
+
+  <!-- Subtitle Tagline -->
+  <text x="600" y="270" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="500" font-size="18" letter-spacing="1.5" fill="#B0E0E6">Instant Song Recognition &amp; Music Discovery</text>
+
+  <!-- Tech Badges Pill Bar -->
+  <g transform="translate(600, 312)">
+    <!-- Pill 1: Jetpack Compose -->
+    <g transform="translate(-190, 0)">
+      <rect x="-70" y="-14" width="140" height="26" rx="13" fill="#0E2A3A" stroke="#00CED1" stroke-opacity="0.5" stroke-width="1"/>
+      <text x="0" y="3" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="600" font-size="11" fill="#48D1CC">Jetpack Compose</text>
+    </g>
+
+    <!-- Pill 2: Material Design 3 -->
+    <g transform="translate(0, 0)">
+      <rect x="-70" y="-14" width="140" height="26" rx="13" fill="#0E2A3A" stroke="#00CED1" stroke-opacity="0.5" stroke-width="1"/>
+      <text x="0" y="3" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="600" font-size="11" fill="#48D1CC">Material Design 3</text>
+    </g>
+
+    <!-- Pill 3: Audio Fingerprinting -->
+    <g transform="translate(190, 0)">
+      <rect x="-75" y="-14" width="150" height="26" rx="13" fill="#0E2A3A" stroke="#00CED1" stroke-opacity="0.5" stroke-width="1"/>
+      <text x="0" y="3" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="600" font-size="11" fill="#48D1CC">Audio Fingerprinting</text>
+    </g>
+  </g>
+</svg>
